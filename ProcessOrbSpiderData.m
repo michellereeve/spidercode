@@ -35,6 +35,7 @@ tempData = csvread([kPathname kFilename]);
 time = tempData(:,2);
 frames = tempData(:,1);
 
+[kineData, kineCoords, newKineCoords] = PullOutKinematics (tempData);
 % PullOutKinematics here - smooth these - body/legs together
 
 % WILL NEED TO CHANGE SPLINE SO IT SMOOTHES PULLOUTKINEMATICS OUTPUT
@@ -113,17 +114,34 @@ legData(isNaN) = NaN;
 
 end
 
-function [] = PullOutKinematics (tempdata)
+function [kineData, kineCoords, newKineCoords] = PullOutKinematics (tempData)
 % PullOutKinematics takes all kinematics (legs & body) from imported CSV
 % data from ProAnalyst, and puts it in a matrix for smoothing.
 
-% index for body X and Y columns - this will be the same across trials
-xPtsBody = [3:2:7];
-yPtsBody = [4:2:8];
+% index for the columns with kinematic data
+kineCoords = [3:size(tempData,2)];
 
-% index for leg X and Y columns
-xPtsLegs = [9:2:size(tempData,2)];
-yPtsLegs = [10:2:size(tempData,2)];
+% create empty dataset
+kineData = nan(size(tempData,1),length(kineCoords));
+newKineCoords = [1:size(kineData,2)];
+
+% pull out kinematic data
+kineData(:,newKineCoords) = tempData(:,kineCoords);
+
+% % index for body X and Y columns - this will be the same across trials
+% xPtsBody = [3:2:7];
+% yPtsBody = [4:2:8];
+% 
+% % index for leg X and Y columns - this will work for all trial types
+% xPtsLegs = [9:2:size(tempData,2)];
+% yPtsLegs = [10:2:size(tempData,2)];
+% 
+% % create empty dataset & new XYs
+% kineData = nan(size(tempData,1),((length(xPtsBody).*2)+(length(xPtsLegs).*2));
+% xNewBody = [1:2:size(bodyData,2)];
+% yNewBody =  [2:2:size(bodyData,2)];
+% xNewLegs = [1:2:size(legData,2)];
+% yNewLegs =  [2:2:size(legData,2)];
 end
 
 
@@ -135,7 +153,7 @@ function [bodyData] = PullOutBodyCoords (tempData)
 xPtsBody = [3:2:7];
 yPtsBody = [4:2:8];
 
-% create empty dataset & new XYs (what data type is this??)
+% create empty dataset & new XYs
 bodyData = nan(size(tempData,1),length(xPtsBody).*2);
 xNewBody = [1:2:size(bodyData,2)];
 yNewBody =  [2:2:size(bodyData,2)];
