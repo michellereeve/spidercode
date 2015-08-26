@@ -37,33 +37,34 @@ frames = tempData(:,1);
 
 [kineData] = PullOutKinematics (tempData);
 
-% set some variables for kineData - leg XY data
+% set some variables for kineData - XY data
 xLegs = [7:2:size(kineData,2)];
 yLegs = [8:2:size(kineData,2)];
 xBody = [1:2:6];
 yBody = [2:2:6];
+xCoords = [1:2:size(kineData,2)];
+yCoords = [2:2:size(kineData,2)];
 
 % spline smooth data - output smData - plot smoothed data
 % Run with sptol set to zero to get raw velocity of each column (body XY, leg XY) (rawVel)
 [~,rawVel] = SplineInterp_wSPAPS(kineData, time, 0, 3);
 
-% calculate resultant raw leg velocities (rTotLegVel)
-rawTotLegVel = sqrt(rawVel(:,xLegs).^2 + rawVel(:,yLegs).^2);
-rawTotBodVel = sqrt(rawVel(:,xBody).^2 + rawVel(:,yBody).^2);
+% calculate raw resultant velocities - first 3 cols = bodyCOM, bodyBack, bodyFront, then legs 
+rawTotVel = sqrt(rawVel(:,xCoords).^2 + rawVel(:,yCoords).^2);
 
-% PUT RESULTANT LEG VELS TOGETHER FOR SMOOTHING
 
-% Run with sptol to get smoothed velocity of X and Y (legVel)
+% Run with sptol to get smoothed velocities
 t_sptol = 0.0025;
-[smLegData,legVel] = SplineInterp_wSPAPS(legData, time, t_sptol, 3);
-% calculate resultant velocity (totVel) from smoothed XY velocities (legVel)
-totVel = sqrt(legVel(:,xNewLegs).^2 + legVel(:,yNewLegs).^2);
+[smKineData,smVel] = SplineInterp_wSPAPS(kineData, time, t_sptol, 3);
 
-% plot raw resultant vel and smoothed resultant vel to check sptol
+% calculate smoothed resultant velocity (smTotVel) from smoothed XY velocities (smVel)
+smTotVel = sqrt(smVel(:,xCoords).^2 + smVel(:,yCoords).^2);
+
+% plot some legs raw resultant vel and smoothed resultant vel to check sptol
 f1=figure;
-    plot(time,rTotVel(:,[1 3]),'r');
+    plot(time,rawTotVel(:,[1 3]),'r');
     hold on;
-    plot(time, totVel(:,[1 3]),'b');
+    plot(time, smTotVel(:,[1 3]),'b');
     xlabel('Time')
     ylabel('Foot velocity (mm/s)')
     title([filePrefix ': Kinematic data: red= raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
