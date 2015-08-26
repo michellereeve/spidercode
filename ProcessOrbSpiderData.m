@@ -35,15 +35,23 @@ tempData = csvread([kPathname kFilename]);
 time = tempData(:,2);
 frames = tempData(:,1);
 
-[kineData, kineCoords, newKineCoords] = PullOutKinematics (tempData);
-% PullOutKinematics here - smooth these - body/legs together
+[kineData] = PullOutKinematics (tempData);
 
-% WILL NEED TO CHANGE SPLINE SO IT SMOOTHES PULLOUTKINEMATICS OUTPUT
+% set some variables for kineData - leg XY data
+xLegs = [7:2:size(kineData,2)];
+yLegs = [8:2:size(kineData,2)];
+xBody = [1:2:6];
+yBody = [2:2:6];
+
 % spline smooth data - output smData - plot smoothed data
-% Run with sptol set to zero to get raw velocity of X and Y (rLegVel)
-[~,rLegVel] = SplineInterp_wSPAPS(legData, time, 0, 3);
-% calculate resultant raw velocity (rTotVel)
-rTotVel = sqrt(rLegVel(:,xNewLegs).^2 + rLegVel(:,yNewLegs).^2);
+% Run with sptol set to zero to get raw velocity of each column (body XY, leg XY) (rawVel)
+[~,rawVel] = SplineInterp_wSPAPS(kineData, time, 0, 3);
+
+% calculate resultant raw leg velocities (rTotLegVel)
+rawTotLegVel = sqrt(rawVel(:,xLegs).^2 + rawVel(:,yLegs).^2);
+rawTotBodVel = sqrt(rawVel(:,xBody).^2 + rawVel(:,yBody).^2);
+
+% PUT RESULTANT LEG VELS TOGETHER FOR SMOOTHING
 
 % Run with sptol to get smoothed velocity of X and Y (legVel)
 t_sptol = 0.0025;
@@ -128,20 +136,6 @@ newKineCoords = [1:size(kineData,2)];
 % pull out kinematic data
 kineData(:,newKineCoords) = tempData(:,kineCoords);
 
-% % index for body X and Y columns - this will be the same across trials
-% xPtsBody = [3:2:7];
-% yPtsBody = [4:2:8];
-% 
-% % index for leg X and Y columns - this will work for all trial types
-% xPtsLegs = [9:2:size(tempData,2)];
-% yPtsLegs = [10:2:size(tempData,2)];
-% 
-% % create empty dataset & new XYs
-% kineData = nan(size(tempData,1),((length(xPtsBody).*2)+(length(xPtsLegs).*2));
-% xNewBody = [1:2:size(bodyData,2)];
-% yNewBody =  [2:2:size(bodyData,2)];
-% xNewLegs = [1:2:size(legData,2)];
-% yNewLegs =  [2:2:size(legData,2)];
 end
 
 
