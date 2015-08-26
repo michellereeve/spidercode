@@ -1,7 +1,6 @@
 function [] = ProcessOrbSpiderData()
 % A script to process spider gait data (initially orb-weaver, intact trials)
 
-
 % user input data if not already loaded in - uigetfile. Output fileName.
 
 
@@ -20,9 +19,6 @@ framerate = 1000;
 
 % load in data file (tempData) - dlmread / csvread
 tempData = csvread([kPathname kFilename]);
-time = tempData(:,2);
-
-% pull out XY coords (data) - decide how to store the many legs
 
 % column numbers (for intact data):
 % 1 = frame number
@@ -35,9 +31,13 @@ time = tempData(:,2);
 % 13-14 = L3 X,Y ... so from #9, odd numbers are X, even numbers are Y
 % ends at 24 (R4 Y)
 
-% WHAT SHOULD I DO WITH THE TIME/FRAME DATA? -- pull out just kinematics
+% set some variables
+time = tempData(:,2);
+frames = tempData(:,1);
 
+% PullOutKinematics here - smooth these - body/legs together
 
+% WILL NEED TO CHANGE SPLINE SO IT SMOOTHES PULLOUTKINEMATICS OUTPUT
 % spline smooth data - output smData - plot smoothed data
 % Run with sptol set to zero to get raw velocity of X and Y (rLegVel)
 [~,rLegVel] = SplineInterp_wSPAPS(legData, time, 0, 3);
@@ -68,6 +68,7 @@ f1=figure;
 %     ylabel('y-coordinates')
 %     title([filePrefix ': Kinematic data: red= raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
 
+% CHANGE INPUT TO PULLOUTKINEMATICS OUTPUT
 [bodyData] = PullOutBodyCoords (tempData);
 
 [legData, xNewLegs, yNewLegs] = PullOutLegCoords (tempData);
@@ -96,10 +97,8 @@ legData(isNaN) = NaN;
 
 
 % calculate angle of motion & rotation matrix (skip for now)
-
-% plot original & rotated data
-
-% save new XY data
+% plot original & rotated data (skip for now)
+% save new XY data (skip for now)
 
 % calculate leg lengths & angles - put in function
 
@@ -113,6 +112,20 @@ legData(isNaN) = NaN;
 % plot gait diagram
 
 end
+
+function [] = PullOutKinematics (tempdata)
+% PullOutKinematics takes all kinematics (legs & body) from imported CSV
+% data from ProAnalyst, and puts it in a matrix for smoothing.
+
+% index for body X and Y columns - this will be the same across trials
+xPtsBody = [3:2:7];
+yPtsBody = [4:2:8];
+
+% index for leg X and Y columns
+xPtsLegs = [9:2:size(tempData,2)];
+yPtsLegs = [10:2:size(tempData,2)];
+end
+
 
 function [bodyData] = PullOutBodyCoords (tempData)
 % PullOutBodyCoords takes body coordinates from imported CSV data from
