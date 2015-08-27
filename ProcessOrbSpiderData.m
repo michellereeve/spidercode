@@ -44,6 +44,11 @@ close(f1);
 % Empty all the elements at the end of the original vector, from the xcoord you clicked on onwards
 tempData((cutoff(1):end),:) = [];
 
+% ALTERNATE STEP TO USER CHOOSING SUBSET
+% % remove instances of -1 - usually this means an error in digitising step
+% isNaN = find(legData == -1);
+% legData(isNaN) = NaN;
+
 % set some variables
 time = tempData(:,2);
 frames = tempData(:,1);
@@ -70,7 +75,6 @@ yCoords = [2:2:size(kineData,2)]; % all Y coords
 
 % calculate raw resultant velocities - first 3 cols = bodyCOM, bodyBack, bodyFront, then legs 
 rawTotVel = sqrt(rawVel(:,xCoords).^2 + rawVel(:,yCoords).^2);
-
 
 % Run with sptol to get smoothed velocities (smVel)
 
@@ -110,32 +114,29 @@ while filtGood == 'N'
 end %end while filtering loop for user adjustment of filter settings
 
     
-[bodyData] = PullOutBodyCoords (kineData);
+[bodyData] = PullOutBodyCoords (kineData,nRows);
 
 [legData, xNewLegs, yNewLegs] = PullOutLegCoords (kineData);
 
+% calculate derivative of xVel & yVel to get overall leg velocity -- got
+% this already from SPLINE?
 
 
 % label legs?
 leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
 
 
-% remove instances of -1 - usually this means an error in digitising step
-isNaN = find(legData == -1);
-legData(isNaN) = NaN;
-
-
-
 % calculate angle of motion & rotation matrix (skip for now)
 % plot original & rotated data (skip for now)
 % save new XY data (skip for now)
+
+
 
 % calculate leg lengths & angles - put in function
 
 % plot leg orbits - angle vs. length
 
-% calculate derivative of xVel & yVel to get overall leg velocity -- got
-% this already from SPLINE?
+
 
 % detect foot contacts by velocity thresholds - put in function
 
@@ -178,7 +179,7 @@ bodyData(:,xNewBody) = kineData(:,xPtsBody);
 bodyData(:,yNewBody) = kineData(:,yPtsBody);
 end
 
-function [legData, xNewLegs, yNewLegs] = PullOutLegCoords (kineData)
+function [legData, xNewLegs, yNewLegs] = PullOutLegCoords (kineData,nRows)
 % PullOutLegCoords takes leg coordinates from imported CSV data from
 % ProAnalyst, and puts it in a matrix.
 
