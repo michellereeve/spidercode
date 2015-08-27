@@ -31,19 +31,38 @@ tempData = csvread([kPathname kFilename]);
 % 13-14 = L3 X,Y ... so from #9, odd numbers are X, even numbers are Y
 % ends at 24 (R4 Y)
 
+nCols = size(tempData,2);
+xLegCols = [9:2:nCols];
+
+% plot raw data - user choose subset from ginput. Decide if this is X vs time data or calc leg length first
+f1=figure;
+plot(tempData(:,xLegCols));
+cutoff = round(ginput(1));
+close(f1);
+
+% update data to new subset
+% Empty all the elements at the end of the original vector, from the xcoord you clicked on onwards
+tempData((cutoff(1):end),:) = [];
+
 % set some variables
 time = tempData(:,2);
 frames = tempData(:,1);
+% row number doesn't change with different subsets once chopped so this variable is always the same
+nRows = size(tempData,1);
 
-[kineData] = PullOutKinematics (tempData);
+% Pull out kinematic data
+[kineData] = PullOutKinematics (tempData,nRows);
+
+clear tempData
+nCols = size(kineData,2); %update to new dataset
 
 % set some variables for kineData - XY data
 xLegs = [7:2:size(kineData,2)];
 yLegs = [8:2:size(kineData,2)];
 xBody = [1:2:6];
 yBody = [2:2:6];
-xCoords = [1:2:size(kineData,2)];
-yCoords = [2:2:size(kineData,2)];
+xCoords = [1:2:size(kineData,2)]; % all X coords
+yCoords = [2:2:size(kineData,2)]; % all Y coords
 
 % spline smooth data - output smData - plot smoothed data
 % Run with sptol set to zero to get raw velocity of each column (body XY, leg XY) (rawVel)
@@ -53,54 +72,55 @@ yCoords = [2:2:size(kineData,2)];
 rawTotVel = sqrt(rawVel(:,xCoords).^2 + rawVel(:,yCoords).^2);
 
 
-% Run with sptol to get smoothed velocities
+% Run with sptol to get smoothed velocities (smVel)
+
+%Filtering section:  Spline filter data in a loop with user feedback
+% Set default tolerance
 t_sptol = 0.0025;
-[smKineData,smVel] = SplineInterp_wSPAPS(kineData, time, t_sptol, 3);
+SSans=inputdlg('Filter settings','Input spline tolerance',1,{num2str(t_sptol)});
+t_sptol=str2num(SSans{1,1}); 
 
-% calculate smoothed resultant velocity (smTotVel) from smoothed XY velocities (smVel)
-smTotVel = sqrt(smVel(:,xCoords).^2 + smVel(:,yCoords).^2);
+%Create a 'while' loop, allow user to adjust spline tolerances
+filtGood = 'N';
+while filtGood == 'N'
+    
+    [smKineData,smVel] = SplineInterp_wSPAPS(kineData, time, t_sptol, 3);
 
-% plot some legs raw resultant vel and smoothed resultant vel to check sptol
-f1=figure;
-    plot(time,rawTotVel(:,[1 3]),'r');
-    hold on;
-    plot(time, smTotVel(:,[1 3]),'b');
-    xlabel('Time')
-    ylabel('Foot velocity (mm/s)')
-    title([filePrefix ': Kinematic data: red= raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
+    % calculate smoothed resultant velocity (smTotVel) from smoothed XY velocities (smVel)
+    smTotVel = sqrt(smVel(:,xCoords).^2 + smVel(:,yCoords).^2);
+
+    % plot some legs raw resultant vel and smoothed resultant vel to check sptol
+    f1=figure;
+        plot(time,rawTotVel(:,[4 6]),'r');
+        hold on;
+        plot(time, smTotVel(:,[4 6]),'b');
+        xlabel('Time')
+        ylabel('Foot velocity (mm/s)')
+        title([filePrefix ': Kinematic data: red = raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
+    waitfor(f1);
+    
+    filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
+    filtGood=filtans{1,1};
+    
+    if filtGood == 'N'
+        SSans=inputdlg('Adjust Filter','Input new spline tolerance',1,{num2str(t_sptol)});
+        t_sptol=str2num(SSans{1,1}); 
+    end
+    
+end %end while filtering loop for user adjustment of filter settings
+
+    
+[bodyData] = PullOutBodyCoords (kineData);
+
+[legData, xNewLegs, yNewLegs] = PullOutLegCoords (kineData);
 
 
-% f1=figure;
-%     plot(legData(:,xNewLegs), legData(:,yNewLegs),'r');
-%     hold on;
-%     plot(smLegData(:,xNewLegs), smLegData(:,yNewLegs),'b');
-%     xlabel('x-coordinates')
-%     ylabel('y-coordinates')
-%     title([filePrefix ': Kinematic data: red= raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
-
-% CHANGE INPUT TO PULLOUTKINEMATICS OUTPUT
-[bodyData] = PullOutBodyCoords (tempData);
-
-[legData, xNewLegs, yNewLegs] = PullOutLegCoords (tempData);
-
-clear tempData
-
-% plot raw data - user choose subset from ginput. Decide if this is X vs time data or calc leg length first
-f1=figure;
-plot(legData(:,xNewLegs));
-
-cutoff = round(ginput(1));
-
-close(f1);
-
-% update data to new subset
-% Empty all the elements at the end of the original vector, from the xcoord you clicked on onwards
-legData((cutoff(1):end),:) = [];
-time((cutoff(1):end),:) = [];
 
 % label legs?
 leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
 
+
+% remove instances of -1 - usually this means an error in digitising step
 isNaN = find(legData == -1);
 legData(isNaN) = NaN;
 
@@ -123,7 +143,7 @@ legData(isNaN) = NaN;
 
 end
 
-function [kineData, kineCoords, newKineCoords] = PullOutKinematics (tempData)
+function [kineData, kineCoords, newKineCoords] = PullOutKinematics (tempData,nRows)
 % PullOutKinematics takes all kinematics (legs & body) from imported CSV
 % data from ProAnalyst, and puts it in a matrix for smoothing.
 
@@ -131,7 +151,7 @@ function [kineData, kineCoords, newKineCoords] = PullOutKinematics (tempData)
 kineCoords = [3:size(tempData,2)];
 
 % create empty dataset
-kineData = nan(size(tempData,1),length(kineCoords));
+kineData = nan(nRows,length(kineCoords));
 newKineCoords = [1:size(kineData,2)];
 
 % pull out kinematic data
@@ -140,40 +160,40 @@ kineData(:,newKineCoords) = tempData(:,kineCoords);
 end
 
 
-function [bodyData] = PullOutBodyCoords (tempData)
+function [bodyData] = PullOutBodyCoords (kineData,nRows)
 % PullOutBodyCoords takes body coordinates from imported CSV data from
 % ProAnalyst, and puts it in a matrix.
 
 % index for body X and Y columns
-xPtsBody = [3:2:7];
-yPtsBody = [4:2:8];
+xPtsBody = [1:2:6];
+yPtsBody = [2:2:6];
 
 % create empty dataset & new XYs
-bodyData = nan(size(tempData,1),length(xPtsBody).*2);
+bodyData = nan(nRows,length(xPtsBody).*2);
 xNewBody = [1:2:size(bodyData,2)];
 yNewBody =  [2:2:size(bodyData,2)];
 
 % pull out body XY data
-bodyData(:,xNewBody) = tempData(:,xPtsBody);
-bodyData(:,yNewBody) = tempData(:,yPtsBody);
+bodyData(:,xNewBody) = kineData(:,xPtsBody);
+bodyData(:,yNewBody) = kineData(:,yPtsBody);
 end
 
-function [legData, xNewLegs, yNewLegs] = PullOutLegCoords (tempData)
+function [legData, xNewLegs, yNewLegs] = PullOutLegCoords (kineData)
 % PullOutLegCoords takes leg coordinates from imported CSV data from
 % ProAnalyst, and puts it in a matrix.
 
 % index for leg X and Y columns
-xPtsLegs = [9:2:size(tempData,2)];
-yPtsLegs = [10:2:size(tempData,2)];
+xPtsLegs = [7:2:size(kineData,2)];
+yPtsLegs = [8:2:size(kineData,2)];
 
 % create empty dataset & new XYs (what data type is this??)
-legData = nan(size(tempData,1),length(xPtsLegs).*2);
+legData = nan(nRows,length(xPtsLegs).*2);
 xNewLegs = [1:2:size(legData,2)];
 yNewLegs =  [2:2:size(legData,2)];
 
 % pull out leg XY data
 % in data, all rows with column numbers in xNew - fill with stuff in
 % tempData column numbers in xPts
-legData(:,xNewLegs) = tempData(:,xPtsLegs);
-legData(:,yNewLegs) = tempData(:,yPtsLegs);
+legData(:,xNewLegs) = kineData(:,xPtsLegs);
+legData(:,yNewLegs) = kineData(:,yPtsLegs);
 end
