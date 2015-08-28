@@ -116,14 +116,17 @@ end %end while filtering loop for user adjustment of filter settings
     
 [bodyData] = PullOutBodyCoords (kineData,nRows);
 
-[legData, xNewLegs, yNewLegs] = PullOutLegCoords (kineData);
-
-% calculate derivative of xVel & yVel to get overall leg velocity -- got
-% this already from SPLINE?
+[legData, xNewLegs, yNewLegs] = PullOutLegCoords (kineData,nRows);
 
 
-% label legs?
-leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
+% detect foot contacts by velocity thresholds - put in function
+
+
+
+% plot gait diagram
+
+% % label legs?
+% leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
 
 
 % calculate angle of motion & rotation matrix (skip for now)
@@ -138,9 +141,7 @@ leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
 
 
 
-% detect foot contacts by velocity thresholds - put in function
 
-% plot gait diagram
 
 end
 
