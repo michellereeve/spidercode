@@ -95,12 +95,13 @@ while filtGood == 'N'
 
     % plot some legs raw resultant vel and smoothed resultant vel to check sptol
     f1=figure;
-        plot(time,rawTotVel(:,4),'r');
-        hold on;
-        plot(time, smTotVel(:,4),'b');
-        xlabel('Time (s)')
-        ylabel('Foot velocity (mm/s)')
-        title([filePrefix ': Kinematic data: red = raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
+    plot(time,rawTotVel(:,4),'r');
+    hold on;
+    plot(time, smTotVel(:,4),'b');
+    xlabel('Time (s)')
+    ylabel('Foot velocity (mm/s)')
+    title([filePrefix ': Kinematic data: red = raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
+%   [~] = SaveFigAsPDF(f1,kPathname,filePrefix,'_VelocityDetection');
     waitfor(f1);
     
     filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
@@ -142,17 +143,31 @@ end
 
 %Debug plot:
 %Plot the stance phases, overlaid onto kinematic data
-f3=figure;
+f2=figure;
 plot(time, smLegTotVel);
 hold on;
 plot(time,legVel_InContact,'v')
 xlabel('Time (s)')
 ylabel('Leg velocity (mm/s)')
 title([filePrefix ': Detected stance phases, using velocity threshold'])
-[~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_VelocityDetection');
-close(f3);
+[~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_VelocityDetection');
+close(f2);
+
+%create gait diagram vectors
+gaitDiagramData = legContacts.* repmat([1 2 3 4 5 6 7 8],length(legContacts),1);
+gaitDiagramData(gaitDiagramData==0) = nan;
 
 % plot gait diagram
+f3=figure;
+plot(time, gaitDiagramData,'.');
+xlabel('Time (s)')
+ylabel('Stance phases')
+%ylim([0.5 4.5])
+title( [filePrefix ': Initial Gait diagram: Foot velocity only'])
+set(gca,'YTick',[1 2 3 4 5 6 7 8])
+set(gca,'YTickLabel',leg_labels)
+[~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
+close(f3);
 
 
 
