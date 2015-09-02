@@ -128,46 +128,67 @@ leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
 %Calculate some velocity values for threshold detection of foot contact
 mean_legVel = nanmean(abs(smLegTotVel));
 std_legVel = nanstd(abs(smLegTotVel));
-velThreshold = mean_legVel - 0.7.*(std_legVel);
-
 % create some empty matrices for the for-loop results
 legContacts = zeros(size(smLegTotVel,1),length(leg_labels));
 legVel_InContact = nan(size(smLegTotVel,1),length(leg_labels));
 
+t_velThreshNum = 0.6; % default velocity threshold number
+SSans=inputdlg('Threshold settings','Input velThreshNum',1,{num2str(t_velThreshNum)});
+t_velThreshNum=str2num(SSans{1,1}); 
+
+%Create a 'while' loop, allow user to adjust velocity threshold
+threshGood = 'N';
+while threshGood == 'N'
+
+velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
+
 % For each foot, detect foot contact periods
-for i = 1:8
-    velBelowThresh = find(smLegTotVel(:,i) < velThreshold(i));
-    legContacts(velBelowThresh,i) = 1;
-    legVel_InContact(velBelowThresh,i) = smLegTotVel(velBelowThresh,i);
-end
+    for i = 1:8
+        velBelowThresh = find(smLegTotVel(:,i) < velThreshold(i));
+        legContacts(velBelowThresh,i) = 1;
+        legVel_InContact(velBelowThresh,i) = smLegTotVel(velBelowThresh,i);
+    end
+    
+    %Debug plot:
+    %Plot the stance phases, overlaid onto kinematic data
+    f2=figure;
+    plot(time, smLegTotVel);
+    hold on;
+    plot(time,legVel_InContact,'v')
+    xlabel('Time (s)')
+    ylabel('Leg velocity (mm/s)')
+    title([filePrefix ': Detected stance phases, using velocity threshold'])
+    [~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_VelocityDetection');
+    close(f2);
 
-%Debug plot:
-%Plot the stance phases, overlaid onto kinematic data
-f2=figure;
-plot(time, smLegTotVel);
-hold on;
-plot(time,legVel_InContact,'v')
-xlabel('Time (s)')
-ylabel('Leg velocity (mm/s)')
-title([filePrefix ': Detected stance phases, using velocity threshold'])
-[~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_VelocityDetection');
-close(f2);
+    %create gait diagram vectors
+    gaitDiagramData = legContacts.* repmat([1 2 3 4 5 6 7 8],length(legContacts),1);
+    gaitDiagramData(gaitDiagramData==0) = nan;
 
-%create gait diagram vectors
-gaitDiagramData = legContacts.* repmat([1 2 3 4 5 6 7 8],length(legContacts),1);
-gaitDiagramData(gaitDiagramData==0) = nan;
+    % plot gait diagram
+    f3=figure;
+    plot(time, gaitDiagramData,'.');
+    xlabel('Time (s)')
+    ylabel('Stance phases')
+    %ylim([0.5 4.5])
+    title( [filePrefix ': Initial Gait diagram: Foot velocity only: CLOSE WINDOW TO CONTINUE'])
+    set(gca,'YTick',[1 2 3 4 5 6 7 8])
+    set(gca,'YTickLabel',leg_labels)
+    [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
+    waitfor(f3);
+    
+    threshans = inputdlg('Is this number good? (Y/N)','VelThresh Status',1,{'N'});
+    threshGood=threshans{1,1};
+    
+    if threshGood == 'N'
+        SSans=inputdlg('Adjust VelThreshNum','Input new number',1,{num2str(t_velThreshNum)});
+        t_velThreshNum=str2num(SSans{1,1}); 
+    end
+    
+    
+end %end while loop
 
-% plot gait diagram
-f3=figure;
-plot(time, gaitDiagramData,'.');
-xlabel('Time (s)')
-ylabel('Stance phases')
-%ylim([0.5 4.5])
-title( [filePrefix ': Initial Gait diagram: Foot velocity only'])
-set(gca,'YTick',[1 2 3 4 5 6 7 8])
-set(gca,'YTickLabel',leg_labels)
-[~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
-close(f3);
+
 
 
 
