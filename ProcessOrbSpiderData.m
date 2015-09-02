@@ -136,8 +136,6 @@ legVel_InContact = nan(size(smLegTotVel,1),length(leg_labels));
 % For each foot, detect foot contact periods
 for i = 1:8
     velBelowThresh = find(smLegTotVel(:,i) < velThreshold(i));
-    %posBelowThresh = find(rotatedData(:,yPts(allFeet_I(i))) < posThreshold(i));
-    %footContacts(intersect(velBelowThresh,posBelowThresh),i) = 1;
     legContacts(velBelowThresh,i) = 1;
     legVel_InContact(velBelowThresh,i) = smLegTotVel(velBelowThresh,i);
 end
@@ -148,9 +146,11 @@ f3=figure;
 plot(time, smLegTotVel);
 hold on;
 plot(time,legVel_InContact,'v')
-xlabel('time (s)')
-ylabel('leg velocity (mm/s)')
+xlabel('Time (s)')
+ylabel('Leg velocity (mm/s)')
 title([filePrefix ': Detected stance phases, using velocity threshold'])
+[~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_VelocityDetection');
+close(f3);
 
 % plot gait diagram
 
@@ -244,4 +244,15 @@ newLegCols = [1:size(smLegTotVel,2)];
 % pull out data
 smLegTotVel(:,newLegCols) = smTotVel(:,smLegTotVelCols);
 
+end
+
+
+function [figH] = SaveFigAsPDF(figH,defDir,baseFNameString,suffixString)
+
+if ~exist('suffixString','var')
+    suffixString = [];
+end
+set(figH,'units', 'normalized'); set(figH,'Position', [0 0.0364583 1 0.875]);
+figFilename = [defDir baseFNameString suffixString '.pdf'];
+saveas(figH,figFilename,'pdf');
 end
