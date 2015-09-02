@@ -121,21 +121,42 @@ end %end while filtering loop for user adjustment of filter settings
 % detect foot contacts by velocity thresholds - put in function
 [smLegTotVel,smLegTotVelCols,newLegCols] = PullOutLegTotVels (smTotVel,nRows);
 
+% label legs
+leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
 
 %Calculate some velocity values for threshold detection of foot contact
-% mean_ftVel = mean(abs(footTotVel));
-% std_ftVel = std(abs(footTotVel));
-% velThreshold = mean_ftVel - 0.6.*(std_ftVel);
-% posThreshold = mean(rotatedData(:,yPts(allFeet_I)));
-% footContacts = zeros(size(rotatedData,1),length(allFeet_I));
-% footV_InContact = nan(size(rotatedData,1),length(allFeet_I));
+mean_legVel = nanmean(abs(smLegTotVel));
+std_legVel = nanstd(abs(smLegTotVel));
+velThreshold = mean_legVel - 0.7.*(std_legVel);
+
+% create some empty matrices for the for-loop results
+legContacts = zeros(size(smLegTotVel,1),length(leg_labels));
+legVel_InContact = nan(size(smLegTotVel,1),length(leg_labels));
+
+% For each foot, detect foot contact periods
+for i = 1:8
+    velBelowThresh = find(smLegTotVel(:,i) < velThreshold(i));
+    %posBelowThresh = find(rotatedData(:,yPts(allFeet_I(i))) < posThreshold(i));
+    %footContacts(intersect(velBelowThresh,posBelowThresh),i) = 1;
+    legContacts(velBelowThresh,i) = 1;
+    legVel_InContact(velBelowThresh,i) = smLegTotVel(velBelowThresh,i);
+end
+
+%Debug plot:
+%Plot the stance phases, overlaid onto kinematic data
+f3=figure;
+plot(time, smLegTotVel);
+hold on;
+plot(time,legVel_InContact,'v')
+xlabel('time (s)')
+ylabel('leg velocity (mm/s)')
+title([filePrefix ': Detected stance phases, using velocity threshold'])
 
 % plot gait diagram
 
 
 
-% % label legs?
-% leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
+
 
 % calculate angle of motion & rotation matrix (skip for now)
 % plot original & rotated data (skip for now)
