@@ -113,13 +113,22 @@ while filtGood == 'N'
     
 end %end while filtering loop for user adjustment of filter settings
 
-    
-[bodyData] = PullOutBodyCoords (kineData,nRows);
-
-[smLegData, smXNewLegs, smYNewLegs] = PullOutLegCoords (smKineData,nRows);
+% FIGURE OUT WHERE I NEED THESE FUNCTIONS
+% [bodyData] = PullOutBodyCoords (kineData,nRows);
+% [smLegData, smXNewLegs, smYNewLegs] = PullOutLegCoords (smKineData,nRows);
 
 
 % detect foot contacts by velocity thresholds - put in function
+[smLegTotVel,smLegTotVelCols,newLegCols] = PullOutLegTotVels (smTotVel,nRows);
+
+
+%Calculate some velocity values for threshold detection of foot contact
+% mean_ftVel = mean(abs(footTotVel));
+% std_ftVel = std(abs(footTotVel));
+% velThreshold = mean_ftVel - 0.6.*(std_ftVel);
+% posThreshold = mean(rotatedData(:,yPts(allFeet_I)));
+% footContacts = zeros(size(rotatedData,1),length(allFeet_I));
+% footV_InContact = nan(size(rotatedData,1),length(allFeet_I));
 
 % plot gait diagram
 
@@ -197,4 +206,21 @@ yNewLegs =  [2:2:size(legData,2)];
 % tempData column numbers in xPts
 legData(:,xNewLegs) = kineData(:,xPtsLegs);
 legData(:,yNewLegs) = kineData(:,yPtsLegs);
+end
+
+function [smLegTotVel, smLegTotVelCols,newLegCols] = PullOutLegTotVels (smTotVel,nRows);
+% PullOutLegTotVels takes just the leg total velocities from smoothed
+% velocities calculated by the SPLINE function. Works on Matrices with 11
+% rows (1-3 = body, 4-11 = legs)
+
+% index for leg columns
+smLegTotVelCols = [4:size(smTotVel,2)];
+
+% create empty dataset & new columns
+smLegTotVel = nan(nRows, length(smLegTotVelCols));
+newLegCols = [1:size(smLegTotVel,2)];
+
+% pull out data
+smLegTotVel(:,newLegCols) = smTotVel(:,smLegTotVelCols);
+
 end
