@@ -71,7 +71,7 @@ yCoords = [2:2:size(kineData,2)]; % all Y coords
 
 % spline smooth data - output smData - plot smoothed data
 % Run with sptol set to zero to get raw velocity of each column (body XY, leg XY) (rawVel)
-[~,rawVel] = SplineInterp_wSPAPS(kineData, time, 0, 3);
+[~,rawVel] = SplineInterp_wSPAPS(kineData, time, 0, 1);
 
 % calculate raw resultant velocities - first 3 cols = bodyCOM, bodyBack, bodyFront, then legs 
 rawTotVel = sqrt(rawVel(:,xCoords).^2 + rawVel(:,yCoords).^2);
@@ -88,7 +88,7 @@ t_sptol=str2num(SSans{1,1});
 filtGood = 'N';
 while filtGood == 'N'
     
-    [smKineData,smVel] = SplineInterp_wSPAPS(kineData, time, t_sptol, 3);
+    [smKineData,smVel] = SplineInterp_wSPAPS(kineData, time, t_sptol, 1);
 
     % calculate smoothed resultant velocity (smTotVel) from smoothed XY velocities (smVel)
     smTotVel = sqrt(smVel(:,xCoords).^2 + smVel(:,yCoords).^2);
