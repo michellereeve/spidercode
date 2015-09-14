@@ -71,7 +71,7 @@ yCoords = [2:2:size(kineData,2)]; % all Y coords
 
 % spline smooth data - output smData - plot smoothed data
 % Run with sptol set to zero to get raw velocity of each column (body XY, leg XY) (rawVel)
-[~,rawVel] = SplineInterp_wSPAPS(kineData, time, 0, 3);
+[~,rawVel] = SplineInterp_wSPAPS(kineData, time, 0, 1);
 
 % calculate raw resultant velocities - first 3 cols = bodyCOM, bodyBack, bodyFront, then legs 
 rawTotVel = sqrt(rawVel(:,xCoords).^2 + rawVel(:,yCoords).^2);
@@ -80,36 +80,36 @@ rawTotVel = sqrt(rawVel(:,xCoords).^2 + rawVel(:,yCoords).^2);
 
 %Filtering section:  Spline filter data in a loop with user feedback
 % Set default tolerance
-t_sptol = 0.3;
-SSans=inputdlg('Filter settings','Input spline tolerance',1,{num2str(t_sptol)});
-t_sptol=str2num(SSans{1,1}); 
+vel_sptol = 0.3; % sptol for smoothing velocities
+SSans=inputdlg('Filter settings','Input spline tolerance',1,{num2str(vel_sptol)});
+vel_sptol=str2num(SSans{1,1}); 
 
 %Create a 'while' loop, allow user to adjust spline tolerances
 filtGood = 'N';
 while filtGood == 'N'
     
-    [smKineData,smVel] = SplineInterp_wSPAPS(kineData, time, t_sptol, 3);
+    [smKineData,smVel] = SplineInterp_wSPAPS(kineData, time, vel_sptol, 1);
 
     % calculate smoothed resultant velocity (smTotVel) from smoothed XY velocities (smVel)
     smTotVel = sqrt(smVel(:,xCoords).^2 + smVel(:,yCoords).^2);
 
     % plot some legs raw resultant vel and smoothed resultant vel to check sptol
     f1=figure;
-    plot(time,rawTotVel(:,4),'r');
+    plot(time,rawTotVel(:,6),'r');
     hold on;
-    plot(time, smTotVel(:,4),'b');
+    plot(time, smTotVel(:,6),'b');
     xlabel('Time (s)')
     ylabel('Foot velocity (mm/s)')
     title([filePrefix ': Kinematic data: red = raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
-%   [~] = SaveFigAsPDF(f1,kPathname,filePrefix,'_VelocityDetection');
+%   [~] = SaveFigAsPDF(f1,kPathname,filePrefix,'_FiltVelocities');
     waitfor(f1);
     
     filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
     filtGood=filtans{1,1};
     
     if filtGood == 'N'
-        SSans=inputdlg('Adjust Filter','Input new spline tolerance',1,{num2str(t_sptol)});
-        t_sptol=str2num(SSans{1,1}); 
+        SSans=inputdlg('Adjust Filter','Input new spline tolerance',1,{num2str(vel_sptol)});
+        vel_sptol=str2num(SSans{1,1}); 
     end
     
 end %end while filtering loop for user adjustment of filter settings
@@ -189,24 +189,51 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
 end %end while loop
 
 
-
-
-
-
-
 % calculate angle of motion & rotation matrix (skip for now)
 % plot original & rotated data (skip for now)
 % save new XY data (skip for now)
 
-% delete 'over' smoothed data for stance detection. Use raw kinematic data, smooth again for leg length/angle stuff. Not as smoothed as before.
+% delete 'over' smoothed data for stance detection. 
+clear smKineData
 
-% calculate leg lengths & angles - put in function
+% Use raw kinematic data, smooth again for leg length/angle stuff. Not as
+% smoothed as before. Spline filter data in a loop with user feedback
+ 
+% Set default tolerance
+kin_sptol = 0.1; % default sptol for calculating kinematic (angle/length) data
+SSans=inputdlg('Filter settings','Input spline tolerance',1,{num2str(kin_sptol)});
+kin_sptol=str2num(SSans{1,1}); 
+
+%Create a 'while' loop, allow user to adjust spline tolerances
+filtGood = 'N';
+while filtGood == 'N'
+    
+    [filtKineData] = SplineInterp_wSPAPS(kineData, time, kin_sptol, 1);
+
+    % plot some legs raw resultant vel and smoothed resultant vel to check sptol
+    f4=figure;
+    plot(kineData(:,xLegs),kineData(:,yLegs),'r');
+    hold on;
+    plot(kineData(:,xLegs), filtKineData(:,yLegs),'b');
+    xlabel('X-coords')
+    ylabel('Y-coords')
+    title([filePrefix ': Kinematic data: red = raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
+%   [~] = SaveFigAsPDF(f4,kPathname,filePrefix,'_FiltKineData');
+    waitfor(f4);
+    
+    filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
+    filtGood=filtans{1,1};
+    
+    if filtGood == 'N'
+        SSans=inputdlg('Adjust Filter','Input new spline tolerance',1,{num2str(kin_sptol)});
+        kin_sptol=str2num(SSans{1,1}); 
+    end
+    
+end %end while filtering loop for user adjustment of filter settings
+
+% calculate leg lengths & angles - put in function - use filtKineData
 
 % plot leg orbits - angle vs. length
-
-
-
-
 
 end
 
