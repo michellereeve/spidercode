@@ -233,6 +233,7 @@ end %end while filtering loop for user adjustment of filter settings
 
 % calculate leg lengths & angles - put in function - use filtKineData
 
+
 % plot leg orbits - angle vs. length
 
 end
@@ -318,4 +319,15 @@ end
 set(figH,'units', 'normalized'); set(figH,'Position', [0 0.0364583 1 0.875]);
 figFilename = [defDir baseFNameString suffixString '.pdf'];
 saveas(figH,figFilename,'pdf');
+end
+
+function [] = CalcLegLengths (filtKineData)
+
+legLengths = nan(nRows,length(xLegCols));
+
+for i=1:8
+    legLengths(:,i) = sqrt((filtKineData(:,i)
+
+end
+
 end
