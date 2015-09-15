@@ -116,7 +116,7 @@ end %end while filtering loop for user adjustment of filter settings
 
 % FIGURE OUT WHERE I NEED THESE FUNCTIONS
 % [bodyData] = PullOutBodyCoords (kineData,nRows);
-% [smLegData, smXNewLegs, smYNewLegs] = PullOutLegCoords (smKineData,nRows);
+
 
 
 % detect foot contacts by velocity thresholds - put in function
@@ -214,7 +214,7 @@ while filtGood == 'N'
     f4=figure;
     plot(kineData(:,xLegs),kineData(:,yLegs),'r');
     hold on;
-    plot(kineData(:,xLegs), filtKineData(:,yLegs),'b');
+    plot(filtKineData(:,xLegs), filtKineData(:,yLegs),'b');
     xlabel('X-coords')
     ylabel('Y-coords')
     title([filePrefix ': Kinematic data: red = raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
@@ -232,7 +232,7 @@ while filtGood == 'N'
 end %end while filtering loop for user adjustment of filter settings
 
 % calculate leg lengths & angles - put in function - use filtKineData
-
+[filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtKineData,nRows);
 
 % plot leg orbits - angle vs. length
 
@@ -321,13 +321,13 @@ figFilename = [defDir baseFNameString suffixString '.pdf'];
 saveas(figH,figFilename,'pdf');
 end
 
-function [] = CalcLegLengths (filtKineData)
-
-legLengths = nan(nRows,length(xLegCols));
-
-for i=1:8
-    legLengths(:,i) = sqrt((filtKineData(:,i)
-
-end
-
-end
+% function [] = CalcLegLengths (filtKineData)
+% 
+% legLengths = nan(nRows,length(xLegCols));
+% 
+% for i=1:8
+%     legLengths(:,i) = sqrt((filtKineData(:,i)
+% 
+% end
+% 
+% end
