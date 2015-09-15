@@ -231,8 +231,11 @@ while filtGood == 'N'
     
 end %end while filtering loop for user adjustment of filter settings
 
-% calculate leg lengths & angles - put in function - use filtKineData
+% pull out just leg data for calculating lengths and angles
 [filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtKineData,nRows);
+
+% calculate leg lengths & angles - put in function - use filtKineData
+[legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs);
 
 % plot leg orbits - angle vs. length
 
@@ -321,13 +324,13 @@ figFilename = [defDir baseFNameString suffixString '.pdf'];
 saveas(figH,figFilename,'pdf');
 end
 
-% function [] = CalcLegLengths (filtKineData)
-% 
-% legLengths = nan(nRows,length(xLegCols));
-% 
-% for i=1:8
-%     legLengths(:,i) = sqrt((filtKineData(:,i)
-% 
-% end
-% 
-% end
+function [legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs)
+
+legLengths = nan(nRows,length(filtXNewLegs));
+
+for i=1:8
+    legLengths(:,i) = sqrt((filtLegData(:,filtXNewLegs(i)).^2)+(filtLegData(:,filtYNewLegs(i)).^2));
+
+end
+
+end
