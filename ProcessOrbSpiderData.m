@@ -81,7 +81,7 @@ rawTotVel = sqrt(rawVel(:,xCoords).^2 + rawVel(:,yCoords).^2);
 %Filtering section:  Spline filter data in a loop with user feedback
 % Set default tolerance
 vel_sptol = 0.3; % sptol for smoothing velocities
-SSans=inputdlg('Filter settings','Input spline tolerance',1,{num2str(vel_sptol)});
+SSans=inputdlg('Filter settings (velocities)','Input spline tolerance',1,{num2str(vel_sptol)});
 vel_sptol=str2num(SSans{1,1}); 
 
 %Create a 'while' loop, allow user to adjust spline tolerances
@@ -100,15 +100,15 @@ while filtGood == 'N'
     plot(time, smTotVel(:,6),'b');
     xlabel('Time (s)')
     ylabel('Foot velocity (mm/s)')
-    title([filePrefix ': Kinematic data: red = raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
-%   [~] = SaveFigAsPDF(f1,kPathname,filePrefix,'_FiltVelocities');
+    title([filePrefix ': Kinematic data: red = raw, blue = filtered | sptol = ' num2str(vel_sptol) ' CLOSE'])
+    [~] = SaveFigAsPDF(f1,kPathname,filePrefix,'_FiltVelocities');
     waitfor(f1);
     
     filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
     filtGood=filtans{1,1};
     
     if filtGood == 'N'
-        SSans=inputdlg('Adjust Filter','Input new spline tolerance',1,{num2str(vel_sptol)});
+        SSans=inputdlg('Adjust Filter','Input new vel spline tolerance',1,{num2str(vel_sptol)});
         vel_sptol=str2num(SSans{1,1}); 
     end
     
@@ -133,7 +133,7 @@ legContacts = zeros(size(smLegTotVel,1),length(leg_labels));
 legVel_InContact = nan(size(smLegTotVel,1),length(leg_labels));
 
 t_velThreshNum = 0.6; % default velocity threshold number
-SSans=inputdlg('Threshold settings','Input velThreshNum',1,{num2str(t_velThreshNum)});
+SSans=inputdlg('Velocity threshold settings','Input velThreshNum',1,{num2str(t_velThreshNum)});
 t_velThreshNum=str2num(SSans{1,1}); 
 
 %Create a 'while' loop, allow user to adjust velocity threshold
@@ -157,7 +157,7 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     plot(time,legVel_InContact,'v')
     xlabel('Time (s)')
     ylabel('Leg velocity (mm/s)')
-    title([filePrefix ': Detected stance phases, using velocity threshold'])
+    title([filePrefix ': Detected stance phases, using velocity threshold = ' num2str(t_velThreshNum)])
     [~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_VelocityDetection');
     close(f2);
 
@@ -171,7 +171,7 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     xlabel('Time (s)')
     ylabel('Stance phases')
     %ylim([0.5 4.5])
-    title( [filePrefix ': Initial Gait diagram: Foot velocity only: CLOSE WINDOW TO CONTINUE'])
+    title( [filePrefix ': Initial Gait diagram: Foot velocity only. CLOSE'])
     set(gca,'YTick',[1 2 3 4 5 6 7 8])
     set(gca,'YTickLabel',leg_labels)
     [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
@@ -201,8 +201,8 @@ clear smKineData
  
 % Set default tolerance
 kin_sptol = 0.1; % default sptol for calculating kinematic (angle/length) data
-SSans=inputdlg('Filter settings','Input spline tolerance',1,{num2str(kin_sptol)});
-kin_sptol=str2num(SSans{1,1}); 
+SSans=inputdlg('Filter settings (kinetics)','Input spline tolerance',1,{num2str(kin_sptol)});
+kin_sptol=str2num(SSans{1,1});
 
 %Create a 'while' loop, allow user to adjust spline tolerances
 filtGood = 'N';
@@ -217,25 +217,29 @@ while filtGood == 'N'
     plot(filtKineData(:,xLegs), filtKineData(:,yLegs),'b');
     xlabel('X-coords')
     ylabel('Y-coords')
-    title([filePrefix ': Kinematic data: red = raw, blue = filtered: CLOSE WINDOW TO CONTINUE'])
-%   [~] = SaveFigAsPDF(f4,kPathname,filePrefix,'_FiltKineData');
+    title([filePrefix ': Kinematic data: red = raw, blue = filtered | sptol = ' num2str(kin_sptol) ' CLOSE'])
+    [~] = SaveFigAsPDF(f4,kPathname,filePrefix,'_FiltKineData');
     waitfor(f4);
     
     filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
     filtGood=filtans{1,1};
     
     if filtGood == 'N'
-        SSans=inputdlg('Adjust Filter','Input new spline tolerance',1,{num2str(kin_sptol)});
+        SSans=inputdlg('Adjust Filter','Input new kin spline tolerance',1,{num2str(kin_sptol)});
         kin_sptol=str2num(SSans{1,1}); 
     end
     
 end %end while filtering loop for user adjustment of filter settings
+
+% pull out body data for subtracting angles from COM
+[filtBodyData] = PullOutBodyCoords (kineData,nRows);
 
 % pull out just leg data for calculating lengths and angles
 [filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtKineData,nRows);
 
 % calculate leg lengths & angles - put in function - use filtKineData
 [legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs);
+[legAngles] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs);
 
 % plot leg orbits - angle vs. length
 
@@ -296,7 +300,7 @@ legData(:,xNewLegs) = kineData(:,xPtsLegs);
 legData(:,yNewLegs) = kineData(:,yPtsLegs);
 end
 
-function [smLegTotVel, smLegTotVelCols,newLegCols] = PullOutLegTotVels (smTotVel,nRows);
+function [smLegTotVel, smLegTotVelCols,newLegCols] = PullOutLegTotVels (smTotVel,nRows)
 % PullOutLegTotVels takes just the leg total velocities from smoothed
 % velocities calculated by the SPLINE function. Works on Matrices with 11
 % rows (1-3 = body, 4-11 = legs)
@@ -331,6 +335,22 @@ legLengths = nan(nRows,length(filtXNewLegs));
 for i=1:8
     legLengths(:,i) = sqrt((filtLegData(:,filtXNewLegs(i)).^2)+(filtLegData(:,filtYNewLegs(i)).^2));
 
+end
+
+end
+
+function [legAngles] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData)
+
+legAngles = nan(nRows, length(filtXNewLegs));
+
+for i=1:8 
+    % calc legs relative to body, COM X/Y - Leg X/Y
+    dX(:,i) = filtBodyData(:,1) - filtLegData(:,filtXNewLegs(i));
+    dY(:,i) = filtBodyData(:,2) - filtLegData(:,filtYNewLegs(i));
+    % calculate leg angles
+    legAngles(:,i) = atan2d(dY(:,1),dX(:,1)); % Correct for negatives? unwrap?
+    %subtract mean leg angle
+    legAngles(:,i) = legAngles(:,i) - nanmean(legAngles(:,i));
 end
 
 end
