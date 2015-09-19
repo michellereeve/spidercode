@@ -237,9 +237,9 @@ end %end while filtering loop for user adjustment of filter settings
 % pull out just leg data for calculating lengths and angles
 [filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtKineData,nRows);
 
-% calculate leg lengths & angles - put in function - use filtKineData
+% calculate leg lengths & angles
 [legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs);
-[legAngles] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs);
+[legAngles,legAnglesMeanSub,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData);
 
 % plot leg orbits - angle vs. length
 
@@ -339,18 +339,19 @@ end
 
 end
 
-function [legAngles] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData)
+function [legAngles,legAnglesMeanSub,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData)
 
 legAngles = nan(nRows, length(filtXNewLegs));
+legAnglesMeanSub = nan(nRows,length(filtXNewLegs));
 
 for i=1:8 
     % calc legs relative to body, COM X/Y - Leg X/Y
     dX(:,i) = filtBodyData(:,1) - filtLegData(:,filtXNewLegs(i));
     dY(:,i) = filtBodyData(:,2) - filtLegData(:,filtYNewLegs(i));
     % calculate leg angles
-    legAngles(:,i) = atan2d(dY(:,1),dX(:,1)); % Correct for negatives? unwrap?
+    legAngles(:,i) = atan2d(dY(:,i),dX(:,i)); % Correct for negatives? unwrap?
     %subtract mean leg angle
-    legAngles(:,i) = legAngles(:,i) - nanmean(legAngles(:,i));
+    legAnglesMeanSub(:,i) = legAngles(:,i) - nanmean(legAngles(:,i));
 end
 
 end
