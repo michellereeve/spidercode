@@ -195,11 +195,56 @@ end %end while loop
 % plot original & rotated data (skip for now)
 % save new XY data (skip for now)
 
-% delete 'over' smoothed data for stance detection. Use raw kinematic data, smooth again for leg length/angle stuff. Not as smoothed as before.
+% delete 'over' smoothed data for stance detection. 
+clear smKineData
 
-% calculate leg lengths & angles - put in function
+% Use raw kinematic data, smooth again for leg length/angle stuff. Not as
+% smoothed as before. Spline filter data in a loop with user feedback
+ 
+% Set default tolerance
+kin_sptol = 0.4; % default sptol for calculating kinematic (angle/length) data
+SSans=inputdlg('Filter settings (kinetics)','Input spline tolerance',1,{num2str(kin_sptol)});
+kin_sptol=str2num(SSans{1,1});
+
+%Create a 'while' loop, allow user to adjust spline tolerances
+filtGood = 'N';
+while filtGood == 'N'
+    
+    [filtKineData] = SplineInterp_wSPAPS(kineData, time, kin_sptol, 1);
+
+    % plot some legs raw resultant vel and smoothed resultant vel to check sptol
+    f4=figure;
+    plot(kineData(:,xLegs),kineData(:,yLegs),'r');
+    hold on;
+    plot(filtKineData(:,xLegs), filtKineData(:,yLegs),'b');
+    xlabel('X-coords')
+    ylabel('Y-coords')
+    title([filePrefix ': Kinematic data: red = raw, blue = filtered | sptol = ' num2str(kin_sptol) ' CLOSE'])
+    [~] = SaveFigAsPDF(f4,kPathname,filePrefix,'_FiltKineData');
+    waitfor(f4);
+    
+    filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
+    filtGood=filtans{1,1};
+    
+    if filtGood == 'N'
+        SSans=inputdlg('Adjust Filter','Input new kin spline tolerance',1,{num2str(kin_sptol)});
+        kin_sptol=str2num(SSans{1,1}); 
+    end
+    
+end %end while filtering loop for user adjustment of filter settings
+
+% pull out body data for subtracting angles from COM
+[filtBodyData] = PullOutBodyCoords (kineData,nRows);
+
+% pull out just leg data for calculating lengths and angles
+[filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtKineData,nRows);
+
+% calculate leg lengths & angles
+[legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs);
+[legAngles,legAnglesMeanSub,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData);
 
 % plot leg orbits - angle vs. length
+
 
 end
 
@@ -283,4 +328,36 @@ end
 set(figH,'units', 'normalized'); set(figH,'Position', [0 0.0364583 1 0.875]);
 figFilename = [defDir baseFNameString suffixString '.pdf'];
 saveas(figH,figFilename,'pdf');
+end
+
+function [legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs)
+
+legLengths = nan(nRows,length(filtXNewLegs));
+
+for i=1:6
+    legLengths(:,i) = sqrt((filtLegData(:,filtXNewLegs(i)).^2)+(filtLegData(:,filtYNewLegs(i)).^2));
+
+end
+
+end
+
+function [legAngles,legAnglesMeanSub,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData)
+
+legAngles = nan(nRows, length(filtXNewLegs));
+legAnglesMeanSub = nan(nRows,length(filtXNewLegs));
+
+for i=1:6 
+    % calc legs relative to body, COM X/Y - Leg X/Y
+    dX(:,i) = filtBodyData(:,1) - filtLegData(:,filtXNewLegs(i));
+    dY(:,i) = filtBodyData(:,2) - filtLegData(:,filtYNewLegs(i));
+    % calculate leg angles
+    legAngles(:,i) = atan2d(dY(:,i),dX(:,i)); % Correct for negatives? unwrap?
+    %subtract mean leg angle
+    legAnglesMeanSub(:,i) = legAngles(:,i) - nanmean(legAngles(:,i));
+    % unwrapped angles... do I need these?
+    legAnglesMeanSubUnwrap = unwrap(legAnglesMeanSub);
+    % find values < 0, replace with 360-abs(angle_value)
+    
+end
+
 end

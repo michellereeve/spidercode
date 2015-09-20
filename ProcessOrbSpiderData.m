@@ -200,7 +200,7 @@ clear smKineData
 % smoothed as before. Spline filter data in a loop with user feedback
  
 % Set default tolerance
-kin_sptol = 0.1; % default sptol for calculating kinematic (angle/length) data
+kin_sptol = 0.4; % default sptol for calculating kinematic (angle/length) data
 SSans=inputdlg('Filter settings (kinetics)','Input spline tolerance',1,{num2str(kin_sptol)});
 kin_sptol=str2num(SSans{1,1});
 
@@ -239,7 +239,7 @@ end %end while filtering loop for user adjustment of filter settings
 
 % calculate leg lengths & angles
 [legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs);
-[legAngles,legAnglesMeanSub,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData);
+[legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData);
 
 % plot leg orbits - angle vs. length
 
@@ -339,7 +339,7 @@ end
 
 end
 
-function [legAngles,legAnglesMeanSub,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData)
+function [legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData)
 
 legAngles = nan(nRows, length(filtXNewLegs));
 legAnglesMeanSub = nan(nRows,length(filtXNewLegs));
@@ -352,6 +352,10 @@ for i=1:8
     legAngles(:,i) = atan2d(dY(:,i),dX(:,i)); % Correct for negatives? unwrap?
     %subtract mean leg angle
     legAnglesMeanSub(:,i) = legAngles(:,i) - nanmean(legAngles(:,i));
+    % unwrapped angles... do I need these?
+    legAnglesMeanSubUnwrap = unwrap(legAnglesMeanSub);
+    % find values < 0, replace with 360-abs(angle_value)
+    
 end
 
 end
