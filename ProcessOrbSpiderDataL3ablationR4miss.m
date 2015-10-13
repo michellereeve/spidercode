@@ -159,7 +159,7 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     plot(time,legVel_InContact,'v')
     xlabel('Time (s)')
     ylabel('Leg velocity (mm/s)')
-    title([filePrefix ': Detected stance phases, using velocity threshold'])
+    title([filePrefix ': Detected stance phases, using velocity threshold = ' num2str(t_velThreshNum)])
     [~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_VelocityDetection');
     close(f2);
 
@@ -173,7 +173,7 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     xlabel('Time (s)')
     ylabel('Stance phases')
     %ylim([0.5 4.5])
-    title( [filePrefix ': Initial Gait diagram: Foot velocity only: CLOSE WINDOW TO CONTINUE'])
+    title( [filePrefix ': Initial Gait diagram: Foot velocity only. CLOSE'])
     set(gca,'YTick',[1 2 3 4 5 6])
     set(gca,'YTickLabel',leg_labels)
     [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
@@ -241,7 +241,7 @@ end %end while filtering loop for user adjustment of filter settings
 
 % calculate leg lengths & angles
 [legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs);
-[legAngles,legAnglesMeanSub,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData);
+[legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData);
 
 % plot leg orbits - angle vs. length
 
@@ -341,7 +341,7 @@ end
 
 end
 
-function [legAngles,legAnglesMeanSub,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData)
+function [legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData)
 
 legAngles = nan(nRows, length(filtXNewLegs));
 legAnglesMeanSub = nan(nRows,length(filtXNewLegs));

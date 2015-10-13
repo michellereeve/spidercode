@@ -237,9 +237,15 @@ end %end while filtering loop for user adjustment of filter settings
 % pull out just leg data for calculating lengths and angles
 [filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtKineData,nRows);
 
+% Calculate legs Relative to body (COM X/Y - Leg X/Y)
+for i=1:8 
+    dXLegs(:,i) = filtLegData(:,filtXNewLegs(i)) - filtBodyData(:,1);
+    dYLegs(:,i) = filtLegData(:,filtYNewLegs(i)) - filtBodyData(:,2);
+end
+
 % calculate leg lengths & angles
 [legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs);
-[legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData);
+[legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap,dX,dY] = CalcLegAngles (nRows,filtXNewLegs,dYLegs,dXLegs);
 
 % plot leg orbits - angle vs. length
 
@@ -328,6 +334,7 @@ figFilename = [defDir baseFNameString suffixString '.pdf'];
 saveas(figH,figFilename,'pdf');
 end
 
+
 function [legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs)
 
 legLengths = nan(nRows,length(filtXNewLegs));
@@ -339,17 +346,15 @@ end
 
 end
 
-function [legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap,dX,dY] = CalcLegAngles (filtLegData,nRows,filtXNewLegs,filtYNewLegs,filtBodyData)
+
+function [legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap] = CalcLegAngles (nRows,filtXNewLegs,dYlegs,dXLegs)
 
 legAngles = nan(nRows, length(filtXNewLegs));
 legAnglesMeanSub = nan(nRows,length(filtXNewLegs));
 
 for i=1:8 
-    % calc legs relative to body, COM X/Y - Leg X/Y
-    dX(:,i) = filtBodyData(:,1) - filtLegData(:,filtXNewLegs(i));
-    dY(:,i) = filtBodyData(:,2) - filtLegData(:,filtYNewLegs(i));
     % calculate leg angles
-    legAngles(:,i) = atan2d(dY(:,i),dX(:,i)); % Correct for negatives? unwrap?
+    legAngles(:,i) = atan2d(dYLegs(:,i),dXLegs(:,i));
     %subtract mean leg angle
     legAnglesMeanSub(:,i) = legAngles(:,i) - nanmean(legAngles(:,i));
     % unwrapped angles... do I need these?

@@ -153,7 +153,7 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     plot(time,legVel_InContact,'v')
     xlabel('Time (s)')
     ylabel('Leg velocity (mm/s)')
-    title([filePrefix ': Detected stance phases, using velocity threshold'])
+    title([filePrefix ': Detected stance phases, using velocity threshold = ' num2str(t_velThreshNum)])
     [~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_VelocityDetection');
     close(f2);
 
@@ -167,7 +167,7 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     xlabel('Time (s)')
     ylabel('Stance phases')
     %ylim([0.5 4.5])
-    title( [filePrefix ': Initial Gait diagram: Foot velocity only: CLOSE WINDOW TO CONTINUE'])
+    title( [filePrefix ': Initial Gait diagram: Foot velocity only. CLOSE'])
     set(gca,'YTick',[1 2 3 4 5 6 7])
     set(gca,'YTickLabel',leg_labels)
     [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
