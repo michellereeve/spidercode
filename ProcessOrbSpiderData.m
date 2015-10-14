@@ -246,7 +246,26 @@ end
 
 % calculate leg lengths & angles
 [legLengths] = CalcLegLengths (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
-[legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap,dX,dY] = CalcLegAngles (nRows,filtXNewLegs,dYLegs,dXLegs);
+[legAngles,legAnglesMeanSub] = CalcLegAngles (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
+
+% plot leg lengths and angles for sanity check
+f5 = figure();
+plot(time,legLengths);
+xlabel('Time (s)');
+ylabel('Length (mm)');
+legend(leg_labels);
+title([filePrefix ': Leg Lengths (rel to COM)']);
+[~] = SaveFigAsPDF(f5,kPathname,filePrefix,'_LegLengths');
+close(f5);
+
+f6 = figure();
+plot(time,legAnglesMeanSub);
+xlabel('Time (s)');
+ylabel('Angle (deg)');
+legend(leg_labels);
+title([filePrefix ': Leg Angles (rel to COM, mean-substracted)']);
+[~] = SaveFigAsPDF(f6,kPathname,filePrefix,'_LegAngles');
+close(f6);
 
 % plot leg orbits - angle vs. length
 
@@ -348,18 +367,18 @@ end
 end
 
 
-function [legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap] = CalcLegAngles (nRows,filtXNewLegs,dYlegs,dXLegs)
+function [legAngles,legAnglesMeanSub] = CalcLegAngles (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs)
 
 legAngles = nan(nRows, length(filtXNewLegs));
 legAnglesMeanSub = nan(nRows,length(filtXNewLegs));
 
 for i=1:8 
     % calculate leg angles
-    legAngles(:,i) = atan2d(dYLegs(:,i),dXLegs(:,i));
+    legAngles(:,i) = atan2d(legDataRelToCOM(:,filtYNewLegs(i)),legDataRelToCOM(:,filtXNewLegs(i)));
     %subtract mean leg angle
     legAnglesMeanSub(:,i) = legAngles(:,i) - nanmean(legAngles(:,i));
-    % unwrapped angles... do I need these?
-    legAnglesMeanSubUnwrap = unwrap(legAnglesMeanSub);
+%     % unwrapped angles... do I need these?
+%     legAnglesMeanSubUnwrap = unwrap(legAnglesMeanSub);
     % find values < 0, replace with 360-abs(angle_value)
     
 end
