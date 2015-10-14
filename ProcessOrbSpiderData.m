@@ -237,14 +237,15 @@ end %end while filtering loop for user adjustment of filter settings
 % pull out just leg data for calculating lengths and angles
 [filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtKineData,nRows);
 
-% Calculate legs Relative to body (COM X/Y - Leg X/Y)
-for i=1:8 
-    dXLegs(:,i) = filtLegData(:,filtXNewLegs(i)) - filtBodyData(:,1);
-    dYLegs(:,i) = filtLegData(:,filtYNewLegs(i)) - filtBodyData(:,2);
+% Calculate legs Relative to body (Leg X/Y - COM X/Y)
+legDataRelToCOM = nan(nRows,length(filtLegData));
+for i=1:8
+    legDataRelToCOM(:,filtXNewLegs(i)) = filtLegData(:,filtXNewLegs(i)) - filtBodyData(:,1);
+    legDataRelToCOM(:,filtYNewLegs(i)) = filtLegData(:,filtYNewLegs(i)) - filtBodyData(:,2);
 end
 
 % calculate leg lengths & angles
-[legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs);
+[legLengths] = CalcLegLengths (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
 [legAngles,legAnglesMeanSub,legAnglesMeanSubUnwrap,dX,dY] = CalcLegAngles (nRows,filtXNewLegs,dYLegs,dXLegs);
 
 % plot leg orbits - angle vs. length
@@ -335,12 +336,12 @@ saveas(figH,figFilename,'pdf');
 end
 
 
-function [legLengths] = CalcLegLengths (filtLegData,nRows,filtXNewLegs,filtYNewLegs)
+function [legLengths] = CalcLegLengths (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs)
 
 legLengths = nan(nRows,length(filtXNewLegs));
 
 for i=1:8
-    legLengths(:,i) = sqrt((filtLegData(:,filtXNewLegs(i)).^2)+(filtLegData(:,filtYNewLegs(i)).^2));
+    legLengths(:,i) = sqrt((legDataRelToCOM(:,filtXNewLegs(i)).^2)+(legDataRelToCOM(:,filtYNewLegs(i)).^2));
 
 end
 
