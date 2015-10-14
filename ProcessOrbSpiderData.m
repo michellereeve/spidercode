@@ -245,16 +245,16 @@ for i=1:8
 end
 
 % calculate leg lengths & angles
-[legLengths] = CalcLegLengths (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
+[legLengths,legLengthsMeanSub] = CalcLegLengths (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
 [legAngles,legAnglesMeanSub] = CalcLegAngles (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
 
 % plot leg lengths and angles for sanity check
 f5 = figure();
-plot(time,legLengths);
+plot(time,legLengthsMeanSub);
 xlabel('Time (s)');
 ylabel('Length (mm)');
 legend(leg_labels);
-title([filePrefix ': Leg Lengths (rel to COM)']);
+title([filePrefix ': Leg Lengths (rel to COM, mean-subtracted)']);
 [~] = SaveFigAsPDF(f5,kPathname,filePrefix,'_LegLengths');
 close(f5);
 
@@ -267,7 +267,28 @@ title([filePrefix ': Leg Angles (rel to COM, mean-substracted)']);
 [~] = SaveFigAsPDF(f6,kPathname,filePrefix,'_LegAngles');
 close(f6);
 
-% plot leg orbits - angle vs. length
+% plot leg orbits - angle vs. length, mean-subtracted
+f7 = figure();
+plot(legLengthsMeanSub,legAnglesMeanSub);
+xlabel('Angle (deg)');
+ylabel('Length (mm)');
+legend(leg_labels);
+title([filePrefix ': Leg Orbital Plot (rel to COM, mean-substracted)']);
+[~] = SaveFigAsPDF(f7,kPathname,filePrefix,'_LegOrbitalPlot');
+close(f7);
+
+% plot leg orbits - angle vs. length, not mean-subtracted
+f8 = figure();
+plot(legLengths,legAngles);
+xlabel('Angle (deg)');
+ylabel('Length (mm)');
+legend(leg_labels);
+title([filePrefix ': Leg Orbital Plot (rel to COM)']);
+[~] = SaveFigAsPDF(f8,kPathname,filePrefix,'_LegOrbitalPlot2');
+close(f8);
+
+% think I need to plot the leg orbits on separate plots for each leg, do a
+% subplot for each leg. Do I want mean-subtracted or not? Does it matter?
 
 end
 
@@ -355,13 +376,16 @@ saveas(figH,figFilename,'pdf');
 end
 
 
-function [legLengths] = CalcLegLengths (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs)
+function [legLengths,legLengthsMeanSub] = CalcLegLengths (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs)
 
 legLengths = nan(nRows,length(filtXNewLegs));
+legLengthsMeanSub = nan(nRows,length(filtXNewLegs));
 
 for i=1:8
+    % calculate leg lengths
     legLengths(:,i) = sqrt((legDataRelToCOM(:,filtXNewLegs(i)).^2)+(legDataRelToCOM(:,filtYNewLegs(i)).^2));
-
+    %subtract mean leg lengths
+    legLengthsMeanSub(:,i) = legLengths(:,i) - nanmean(legLengths(:,i));
 end
 
 end
@@ -375,7 +399,7 @@ legAnglesMeanSub = nan(nRows,length(filtXNewLegs));
 for i=1:8 
     % calculate leg angles
     legAngles(:,i) = atan2d(legDataRelToCOM(:,filtYNewLegs(i)),legDataRelToCOM(:,filtXNewLegs(i)));
-    %subtract mean leg angle
+    %subtract mean leg angle - NEED TO CHANGE THIS TO CIRCULAR NANMEAN?
     legAnglesMeanSub(:,i) = legAngles(:,i) - nanmean(legAngles(:,i));
 %     % unwrapped angles... do I need these?
 %     legAnglesMeanSubUnwrap = unwrap(legAnglesMeanSub);
