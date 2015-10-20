@@ -238,7 +238,7 @@ end %end while filtering loop for user adjustment of filter settings
 [filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtKineData,nRows);
 
 % Calculate legs Relative to body (Leg X/Y - COM X/Y)
-legDataRelToCOM = nan(nRows,length(filtLegData));
+legDataRelToCOM = nan(nRows,size(filtLegData,2));
 for i=1:8
     legDataRelToCOM(:,filtXNewLegs(i)) = filtLegData(:,filtXNewLegs(i)) - filtBodyData(:,1);
     legDataRelToCOM(:,filtYNewLegs(i)) = filtLegData(:,filtYNewLegs(i)) - filtBodyData(:,2);
@@ -289,6 +289,23 @@ close(f8);
 
 % think I need to plot the leg orbits on separate plots for each leg, do a
 % subplot for each leg. Do I want mean-subtracted or not? Does it matter?
+
+% polar plots
+% convert cartesian coords to polar using X and Y. Rho = radius (in theory,
+% length) and Theta = angle
+for i=1:8
+    [theta(:,i),rho(:,i)] = cart2pol(legDataRelToCOM(:,filtXNewLegs(i)),legDataRelToCOM(:,filtYNewLegs(i)));
+end
+
+%plot polar plots
+for i=1:7
+    f9 = polar(theta(:,i),rho(:,i));
+    hold on
+end
+polar(theta(:,8),rho(:,8),'k');
+legend(leg_labels);
+title([filePrefix ': Leg Polar Plot (rel to COM)']);
+%save manually if you want it!
 
 end
 
