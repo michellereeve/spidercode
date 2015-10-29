@@ -303,9 +303,21 @@ for i=1:7
     hold on
 end
 polar(theta(:,8),rho(:,8),'k');
-legend(leg_labels);
+legend(leg_labels,'Location', 'eastoutside');
 title([filePrefix ': Leg Polar Plot (rel to COM)']);
+print([kPathname,filePrefix,'_LegPolarPlot'],'-dpdf');
 %save manually if you want it!
+
+% % alternate way of doing polar plots - should give same result as above but
+% % doesn't 
+% for i=1:7
+%     f9 = polar(legAngles(:,i),legLengths(:,i));
+%     hold on
+% end
+% polar(legAngles(:,8),legLengths(:,8),'k');
+% legend(leg_labels,'Location', 'eastoutside');
+% title([filePrefix ': Leg Polar Plot (rel to COM)']);
+% print([kPathname,filePrefix,'_LegPolarPlot'],'-dpdf');
 
 end
 
