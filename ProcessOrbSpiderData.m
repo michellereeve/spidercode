@@ -290,34 +290,22 @@ close(f8);
 % think I need to plot the leg orbits on separate plots for each leg, do a
 % subplot for each leg. Do I want mean-subtracted or not? Does it matter?
 
-% polar plots
-% convert cartesian coords to polar using X and Y. Rho = radius (in theory,
-% length) and Theta = angle
-for i=1:8
-    [theta(:,i),rho(:,i)] = cart2pol(legDataRelToCOM(:,filtXNewLegs(i)),legDataRelToCOM(:,filtYNewLegs(i)));
-end
+% convert legAngles to radians for the polar plot:
+[legAnglesRad] = deg2rad (legAngles);
 
-%plot polar plots
+% plot polar plots. Angle needs to be in radians. The act of calculating the
+% angles and lengths (already done) is equivalent to the cart2pol function.
+
 for i=1:7
-    f9 = polar(theta(:,i),rho(:,i));
+    f9 = polar(legAnglesRad(:,i),legLengths(:,i));
     hold on
 end
-polar(theta(:,8),rho(:,8),'k');
+polar(legAnglesRad(:,8),legLengths(:,8),'k');
 legend(leg_labels,'Location', 'eastoutside');
 title([filePrefix ': Leg Polar Plot (rel to COM)']);
 print([kPathname,filePrefix,'_LegPolarPlot'],'-dpdf');
-%save manually if you want it!
+close(f9);
 
-% % alternate way of doing polar plots - should give same result as above but
-% % doesn't 
-% for i=1:7
-%     f9 = polar(legAngles(:,i),legLengths(:,i));
-%     hold on
-% end
-% polar(legAngles(:,8),legLengths(:,8),'k');
-% legend(leg_labels,'Location', 'eastoutside');
-% title([filePrefix ': Leg Polar Plot (rel to COM)']);
-% print([kPathname,filePrefix,'_LegPolarPlot'],'-dpdf');
 
 end
 
@@ -435,5 +423,13 @@ for i=1:8
     % find values < 0, replace with 360-abs(angle_value)
     
 end
+
+
+end
+
+function [Rad] = deg2rad (Deg)
+% Covert an angle in radians to degrees
+
+Rad = (pi/180) * Deg;
 
 end
