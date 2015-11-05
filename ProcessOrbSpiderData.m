@@ -295,9 +295,9 @@ close(f8);
 
 % plot polar plots. Angle needs to be in radians. The act of calculating the
 % angles and lengths (already done) is equivalent to the cart2pol function.
-
+f9=(figure);
 for i=1:7
-    f9 = polar(legAnglesRad(:,i),legLengths(:,i));
+    polar(legAnglesRad(:,i),legLengths(:,i));
     hold on
 end
 polar(legAnglesRad(:,8),legLengths(:,8),'k');
