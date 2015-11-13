@@ -80,7 +80,7 @@ rawTotVel = sqrt(rawVel(:,xCoords).^2 + rawVel(:,yCoords).^2);
 
 %Filtering section:  Spline filter data in a loop with user feedback
 % Set default tolerance
-vel_sptol = 0.3; % sptol for smoothing velocities
+vel_sptol = 0.2; % sptol for smoothing velocities
 SSans=inputdlg('Filter settings (velocities)','Input spline tolerance',1,{num2str(vel_sptol)});
 vel_sptol=str2num(SSans{1,1}); 
 
@@ -132,7 +132,7 @@ std_legVel = nanstd(abs(smLegTotVel));
 legContacts = zeros(size(smLegTotVel,1),length(leg_labels));
 legVel_InContact = nan(size(smLegTotVel,1),length(leg_labels));
 
-t_velThreshNum = 0.6; % default velocity threshold number
+t_velThreshNum = 0.05; % default velocity threshold number
 SSans=inputdlg('Velocity threshold settings','Input velThreshNum',1,{num2str(t_velThreshNum)});
 t_velThreshNum=str2num(SSans{1,1}); 
 
@@ -200,7 +200,7 @@ clear smKineData
 % smoothed as before. Spline filter data in a loop with user feedback
  
 % Set default tolerance
-kin_sptol = 0.4; % default sptol for calculating kinematic (angle/length) data
+kin_sptol = 0.1; % default sptol for calculating kinematic (angle/length) data
 SSans=inputdlg('Filter settings (kinetics)','Input spline tolerance',1,{num2str(kin_sptol)});
 kin_sptol=str2num(SSans{1,1});
 
