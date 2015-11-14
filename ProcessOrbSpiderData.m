@@ -129,8 +129,8 @@ leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
 mean_legVel = nanmean(abs(smLegTotVel));
 std_legVel = nanstd(abs(smLegTotVel));
 % create some empty matrices for the for-loop results
-legContacts = zeros(size(smLegTotVel,1),length(leg_labels));
-legVel_InContact = nan(size(smLegTotVel,1),length(leg_labels));
+% legContacts = zeros(size(smLegTotVel,1),length(leg_labels));
+% legVel_InContact = nan(size(smLegTotVel,1),length(leg_labels));
 
 t_velThreshNum = 0.05; % default velocity threshold number
 SSans=inputdlg('Velocity threshold settings','Input velThreshNum',1,{num2str(t_velThreshNum)});
@@ -139,7 +139,8 @@ t_velThreshNum=str2num(SSans{1,1});
 %Create a 'while' loop, allow user to adjust velocity threshold
 threshGood = 'N';
 while threshGood == 'N'
-
+legContacts = zeros(size(smLegTotVel,1),length(leg_labels));
+legVel_InContact = nan(size(smLegTotVel,1),length(leg_labels));
 velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
 
 % For each foot, detect foot contact periods
@@ -270,8 +271,8 @@ close(f6);
 % plot leg orbits - angle vs. length, mean-subtracted
 f7 = figure();
 plot(legLengthsMeanSub,legAnglesMeanSub);
-xlabel('Angle (deg)');
-ylabel('Length (mm)');
+ylabel('Angle (deg)');
+xlabel('Length (mm)');
 legend(leg_labels);
 title([filePrefix ': Leg Orbital Plot (rel to COM, mean-substracted)']);
 [~] = SaveFigAsPDF(f7,kPathname,filePrefix,'_LegOrbitalPlot');
@@ -280,8 +281,8 @@ close(f7);
 % plot leg orbits - angle vs. length, not mean-subtracted
 f8 = figure();
 plot(legLengths,legAngles);
-xlabel('Angle (deg)');
-ylabel('Length (mm)');
+ylabel('Angle (deg)');
+xlabel('Length (mm)');
 legend(leg_labels);
 title([filePrefix ': Leg Orbital Plot (rel to COM)']);
 [~] = SaveFigAsPDF(f8,kPathname,filePrefix,'_LegOrbitalPlot2');
@@ -306,6 +307,23 @@ title([filePrefix ': Leg Polar Plot (rel to COM)']);
 print([kPathname,filePrefix,'_LegPolarPlot'],'-dpdf');
 close(f9);
 
+% calculate Hilbert phases (normal and inverted)
+for i=1:8
+    hilbert_phase(:,i) = angle(hilbert(legAnglesMeanSub(:,i)));
+    hilbert_phase_inverted(:,i) = angle(hilbert(legAnglesMeanSub(:,i)).*-1);
+end
+
+%plot hilbert phases
+f10 = figure;
+subplot(2,1,2)
+plot(time,hilbert_phase)
+xlabel('Time (s)')
+subplot(2,1,1)
+plot(time,hilbert_phase_inverted)
+ylabel('hilbert phase')
+title([filePrefix ': Hilbert phase of leg angles'])
+[~] = SaveFigAsPDF(f10,kPathname,filePrefix,'_HilbertPhase');
+close(f10);
 
 end
 
