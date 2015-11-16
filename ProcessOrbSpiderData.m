@@ -45,9 +45,15 @@ xLegCols = [9:2:nCols];
 % tempData((cutoff(1):end),:) = [];
 
 % ALTERNATE STEP TO USER CHOOSING SUBSET
-% remove instances of -1 - usually this means an error in digitising step
+% remove instances of -1 in kinematic data - usually this means an error in digitising step
 isNaN = find(tempData == -1);
 tempData(isNaN) = NaN;
+%chop the end of the dataset off where the NaNs occur (this screws up Hilbert calcs later on if not removed.) This is a very rough
+% way of doing it - if there's a NaN in the middle of the dataset it will
+% remove loads of useful data. Should change it to check for >2 adjacent
+% rows containing NaNs but will do for now (or can check with Monica!)
+[NANROW NANCOL] = find(isnan(tempData));
+tempData((NANROW(1):end),:) = [];
 
 % set some variables
 time = tempData(:,2);
@@ -232,8 +238,9 @@ while filtGood == 'N'
     
 end %end while filtering loop for user adjustment of filter settings
 
+
 % pull out body data for subtracting angles from COM
-[filtBodyData] = PullOutBodyCoords (kineData,nRows);
+[filtBodyData] = PullOutBodyCoords (filtKineData,nRows);
 
 % pull out just leg data for calculating lengths and angles
 [filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtKineData,nRows);
