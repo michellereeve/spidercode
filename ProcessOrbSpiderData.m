@@ -9,7 +9,7 @@ SpidColors = [0 0.4470 0.7410;
     0.4660 0.6740 0.1880; 
     0.3010 0.7450 0.9330;
     0.6350 0.0780 0.1840;
-    0 0 0];
+    0 0 0] %black - change if too harsh;
 set(groot,'defaultAxesColorOrder',SpidColors);
 
 % user input data if not already loaded in - uigetfile. Output fileName.
