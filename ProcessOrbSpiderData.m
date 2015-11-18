@@ -1,6 +1,17 @@
 function [] = ProcessOrbSpiderData()
 % A script to process spider gait data (initially orb-weaver, intact trials)
 
+% set ColourOrder for plots - need 8 colours, default is 7
+SpidColors = [0 0.4470 0.7410; 
+    0.8500 0.3250 0.0980; 
+    0.9290 0.6940 0.1250; 
+    0.4940 0.1840 0.5560; 
+    0.4660 0.6740 0.1880; 
+    0.3010 0.7450 0.9330;
+    0.6350 0.0780 0.1840;
+    0 0 0];
+set(groot,'defaultAxesColorOrder',SpidColors);
+
 % user input data if not already loaded in - uigetfile. Output fileName.
 
 
@@ -322,12 +333,15 @@ end
 
 %plot hilbert phases
 f10 = figure;
-subplot(2,1,2)
-plot(time,hilbert_phase)
-xlabel('Time (s)')
+%set(f10,'ColorOrder',SpidColors);
 subplot(2,1,1)
+plot(time,hilbert_phase);
+xlabel('Time (s)')
+ylabel('Hilbert phase (H1)');
+subplot(2,1,2)
 plot(time,hilbert_phase_inverted)
-ylabel('hilbert phase')
+xlabel('Time(s)');
+ylabel('Hilbert phase inverted (H2)')
 title([filePrefix ': Hilbert phase of leg angles'])
 [~] = SaveFigAsPDF(f10,kPathname,filePrefix,'_HilbertPhase');
 close(f10);
