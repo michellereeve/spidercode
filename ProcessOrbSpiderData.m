@@ -9,7 +9,7 @@ SpidColors = [0 0.4470 0.7410;
     0.4660 0.6740 0.1880; 
     0.3010 0.7450 0.9330;
     0.6350 0.0780 0.1840;
-    0 0 0] %black - change if too harsh;
+    0 0 0.4828]; 
 set(groot,'defaultAxesColorOrder',SpidColors);
 
 % user input data if not already loaded in - uigetfile. Output fileName.
@@ -315,11 +315,7 @@ close(f8);
 % plot polar plots. Angle needs to be in radians. The act of calculating the
 % angles and lengths (already done) is equivalent to the cart2pol function.
 f9=(figure);
-for i=1:7
-    polar(legAnglesRad(:,i),legLengths(:,i));
-    hold on
-end
-polar(legAnglesRad(:,8),legLengths(:,8),'k');
+polar(legAnglesRad,legLengths);
 legend(leg_labels,'Location', 'eastoutside');
 title([filePrefix ': Leg Polar Plot (rel to COM)']);
 print([kPathname,filePrefix,'_LegPolarPlot'],'-dpdf');
@@ -333,7 +329,6 @@ end
 
 %plot hilbert phases
 f10 = figure;
-%set(f10,'ColorOrder',SpidColors);
 subplot(2,1,1)
 plot(time,hilbert_phase);
 xlabel('Time (s)')
@@ -342,11 +337,28 @@ subplot(2,1,2)
 plot(time,hilbert_phase_inverted)
 xlabel('Time(s)');
 ylabel('Hilbert phase inverted (H2)')
+legend(leg_labels);
 title([filePrefix ': Hilbert phase of leg angles'])
 [~] = SaveFigAsPDF(f10,kPathname,filePrefix,'_HilbertPhase');
 close(f10);
 
+% Find 'events' in both Hilbert phases -- NOTE that <0.25*pi*-1 seems to
+% work for the inverted hilbert but adds extra for the normal and i don't
+% know why. troubleshoot with monica. but imagining they are right and
+% continuing with rest of code...
+for i=1:8
+    eventStart_H1{i} = find(diff(hilbert_phase(:,i)<(0.5*pi)));
+    eventStart_H2{i} = find(diff(hilbert_phase_inverted(:,i))<(0.25*pi*-1));
+    
+    % sort rows by eventStart_H1 in ascending order of column 1
+    hilbertSorted = sortrows([eventStart_H1{i};  eventStart_H2{i} ],1);
+    hilbertEvents{i} = hilbertSorted;
+    
 end
+
+
+end
+
 
 function [kineData, kineCoords, newKineCoords] = PullOutKinematics (tempData,nRows)
 % PullOutKinematics takes all kinematics (legs & body) from imported CSV
