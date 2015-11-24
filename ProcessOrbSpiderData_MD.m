@@ -80,6 +80,7 @@ nRows = size(tempData,1);
 
 clear tempData
 nCols = size(kineData,2); %update to new dataset
+nPts = fix(nCols./2);
 
 % set some variables for kineData - XY data
 xLegs = [7:2:size(kineData,2)];
@@ -136,7 +137,6 @@ end %end while filtering loop for user adjustment of filter settings
 
 % FIGURE OUT WHERE I NEED THESE FUNCTIONS
 % [bodyData] = PullOutBodyCoords (kineData,nRows);
-
 
 
 % detect foot contacts by velocity thresholds - put in function
@@ -229,11 +229,6 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     
 end %end while loop
 
-
-% calculate angle of motion & rotation matrix (skip for now)
-% plot original & rotated data (skip for now)
-% save new XY data (skip for now)
-
 % delete 'over' smoothed data for stance detection. 
 clear smKineData
 
@@ -272,8 +267,57 @@ while filtGood == 'N'
     
 end %end while filtering loop for user adjustment of filter settings
 
+%%
 % ROTATION CODE SHOULD GO HERE, BEOFRE ANYTHING ELSE IS CALCULATED
+startIdx = find(sum(isnan(filtKineData),2) == 0, 1,'first' );
+endIdx = find(sum(isnan(filtKineData),2) == 0, 1,'last' );
+originPt = filtKineData(startIdx,1:2); %XY coords of bodyCOM
+filtKineDataRot = filtKineData - repmat(originPt,size(filtKineData,1),nPts);
 
+% Calculate the angle of motion and a rotation matrix
+deltaXtravelled = mean(filtKineDataRot(endIdx,xCoords(1:2))- filtKineDataRot(startIdx,xCoords(1:2)));
+deltaYtravelled = mean(filtKineDataRot(endIdx,yCoords(1:2))- filtKineDataRot(startIdx,yCoords(1:2)));
+rotation_angle = (atan2(deltaYtravelled,deltaXtravelled)).*-1;
+
+rotation_angle_deg = rad2deg(rotation_angle);
+rotation_matrix =  [  cos(rotation_angle), -sin(rotation_angle);
+    sin(rotation_angle),  cos(rotation_angle)];
+
+rotatedData = nan(size(filtKineDataRot,1),size(filtKineDataRot,2));
+
+%Rotate the data so that the primary direction of motion is fore-aft
+for k=1:nPts
+    c_point= [xCoords(k)  yCoords(k)];
+    c_vector = filtKineDataRot(:,c_point)';
+    newVector = rotation_matrix*c_vector;
+    newVector = newVector';
+    rotatedData(:,c_point) = newVector;
+end
+
+if  deltaXtravelled <0
+    rotatedData(:,yPts) = rotatedData(:,yPts).*-1;
+end
+
+%Read just origin vertical minimum
+yMin = min(min(rotatedData(:,yCoords)));
+rotatedData(:,yCoords) = rotatedData(:,yCoords) - repmat(yMin,length(rotatedData(:,yCoords)),nPts);
+
+%Calculate velocity from rotated points
+[~,vel_xy] = SplineInterp_wSPAPS(rotatedData, time, 0, 2, time,0);
+
+%Plot the original and rotated data for 'reality check'
+f28=figure;
+plot(filtKineDataRot(:,xCoords), filtKineDataRot(:,yCoords),'r');
+hold on;
+plot(filtKineDataRot(1,xCoords), filtKineDataRot(1,yCoords),'ro');
+plot(rotatedData(:,xCoords), rotatedData(:,yCoords),'b');
+plot(rotatedData(1,xCoords), rotatedData(1,yCoords),'bo');
+xlabel('x-coordinates')
+ylabel('y-coordinates')
+title([filePrefix ': Rotated kinematic data: red= raw, blue, rotated'])
+[~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_RotatedData');
+
+%%
 % pull out body data for subtracting angles from COM
 [filtBodyData] = PullOutBodyCoords (filtKineData,nRows);
 
@@ -293,13 +337,24 @@ end
 
 % plot leg lengths and angles for sanity check 
 f5 = figure();
-plot(time,legLengthsMeanSub);
+for i=1:4
+    subplot(4,1,i)
+    hold on;
+col_i = SpidColors(i,:); 
+col_i2 = SpidColors(i+4,:);    
+plot(time,legLengthsMeanSub(:,i),'Color',col_i);
+plot(time,legLengthsMeanSub(:,i+4),'Color',col_i2);
+   legend(['L ' num2str(i)],['R ' num2str(i)])
+    if i == 2
+     ylabel('Leg length (mm)')
+    end  
+end
 xlabel('Time (s)');
-ylabel('Length (mm)');
-legend(leg_labels);
+subplot(4,1,1)
+hold on;
 title([filePrefix ': Leg Lengths (rel to COM, mean-subtracted)']);
 [~] = SaveFigAsPDF(f5,kPathname,filePrefix,'_LegLengths');
-close(f5);
+%close(f5);
 
 f6 = figure();
 for i = 1:4 
