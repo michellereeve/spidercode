@@ -197,18 +197,24 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     %clear f2; 
 
     %create gait diagram vectors
-    gaitDiagramData = legContacts.* repmat([1 2 3 4 5 6 7 8],length(legContacts),1);
+    gaitDiagramData = legContacts.* repmat([8 6 4 2 7 5 3 1],length(legContacts),1);
     gaitDiagramData(gaitDiagramData==0) = nan;
+    leg_labels_anat = {'R4','L4','R3','L3','R2','L2','R1','L1'};
 
-    % plot gait diagram
+% plot gait diagram - NEW - in anatomical pairs as before
     f3=figure;
-    plot(time, gaitDiagramData,'.');
+    hold on;
+    for i=1:4
+        col_i = SpidColors(i,:);
+        col_i2 = SpidColors(i+4,:);
+        plot(time, gaitDiagramData(:,i),'.','Color',col_i);
+        plot(time, gaitDiagramData(:,i+4),'.','Color',col_i2);     
+    end
     xlabel('Time (s)')
     ylabel('Stance phases')
-    %ylim([0.5 4.5])
     title( [filePrefix ': Initial Gait diagram: Foot velocity only.'])
     set(gca,'YTick',[1 2 3 4 5 6 7 8])
-    set(gca,'YTickLabel',leg_labels)
+    set(gca,'YTickLabel',leg_labels_anat)
     [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
     %waitfor(f3);
     
@@ -434,14 +440,14 @@ for i=1:8
         
         if fO_Events(1)<fD_Events(1)
             curStanceIndex = [1:1:fO_Events(1)];
-            newGaitDiagram(curStanceIndex,i) = 1.*i;
+            newGaitDiagram(curStanceIndex,i) = 1;%.*i;
         end
         
         for k=1:length(fD_Events)
             cFD = fD_Events(k);
             cFO = min([fO_Events(fO_Events>cFD)]);
             curStanceIndex = [cFD:1:min([cFO length(newGaitDiagram)])];
-            newGaitDiagram(curStanceIndex,i) = 1.*i;
+            newGaitDiagram(curStanceIndex,i) = 1;%.*i;
         end
         
     else %If there are not enough events to calculate full stride cycles for this leg,  enter NaNs
@@ -456,29 +462,7 @@ for i=1:8
    
     
 end
-
-%     f2=figure;
-%      hold on;
-%     for i = 1:4 
-%     subplot(4,1,i)
-%     hold on;
-%     col_i = SpidColors(i,:); 
-%     col_i2 = SpidColors(i+4,:);    
-%     plot(time, smLegTotVel(:,i),'Color',col_i);  
-%     plot(time,legVel_InContact(:,i),'v','Color',col_i)   
-%     plot(time, smLegTotVel(:,i+4),'Color',col_i2);  
-%     plot(time,legVel_InContact(:,i+4),'v','Color',col_i2)
-%     legend(['L ' num2str(i)], 'VD', ['R ' num2str(i)],'VD')
-%     if i == 2
-%      ylabel('Leg velocity (mm/s)')
-%     end  
-%     end
-%     xlabel('Time (s)')   
-%     subplot(4,1,1)
-%     hold on;
-%     title([filePrefix ': Detected stance phases, using velocity threshold = ' num2str(t_velThreshNum)])
-% 
-    
+  
 %plot hilbert phases
 f10 = figure;
  for i = 1:4 
@@ -506,14 +490,37 @@ title([filePrefix ': Hilbert phase of leg angles'])
 [~] = SaveFigAsPDF(f10,kPathname,filePrefix,'_HilbertPhase');
 %close(f10);
 
+% 
+% f3=figure;
+%     hold on;
+%     for i=1:4
+%         col_i = SpidColors(i,:);
+%         col_i2 = SpidColors(i+4,:);
+%         plot(time, gaitDiagramData(:,i),'.','Color',col_i);
+%         plot(time, gaitDiagramData(:,i+4),'.','Color',col_i2);     
+%     end
+%     xlabel('Time (s)')
+%     ylabel('Stance phases')
+%     title( [filePrefix ': Initial Gait diagram: Foot velocity only.'])
+%     set(gca,'YTick',[1 2 3 4 5 6 7 8])
+%     set(gca,'YTickLabel',leg_labels_anat)
+%     [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
+
  
 %Plot the new gait diagram
+newGaitDiagramData = newGaitDiagram.* repmat([8 6 4 2 7 5 3 1],length(newGaitDiagram),1);
 f11= figure;
-plot(time, newGaitDiagram,'.');
+hold on
+    for i=1:4
+        col_i = SpidColors(i,:);
+        col_i2 = SpidColors(i+4,:);
+        plot(time, newGaitDiagramData(:,i),'.','Color',col_i);
+        plot(time, newGaitDiagramData(:,i+4),'.','Color',col_i2);
+    end
     xlabel('Time (s)')
     ylabel('Stance phases')
      set(gca,'YTick',[1 2 3 4 5 6 7 8])
-    set(gca,'YTickLabel',leg_labels)
+    set(gca,'YTickLabel',leg_labels_anat)
 title([filePrefix ': New Gait diagram: foot velocity and leg angle detection'] )
 [~] = SaveFigAsPDF(f11,kPathname,filePrefix,'_GaitDiagram_Combined');
     
