@@ -206,11 +206,11 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     xlabel('Time (s)')
     ylabel('Stance phases')
     %ylim([0.5 4.5])
-    title( [filePrefix ': Initial Gait diagram: Foot velocity only. CLOSE'])
+    title( [filePrefix ': Initial Gait diagram: Foot velocity only.'])
     set(gca,'YTick',[1 2 3 4 5 6 7 8])
     set(gca,'YTickLabel',leg_labels)
     [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
-    waitfor(f3);
+    %waitfor(f3);
     
     threshans = inputdlg('Is this number good? (Y/N)','VelThresh Status',1,{'N'});
     threshGood=threshans{1,1};
@@ -516,16 +516,6 @@ plot(time, newGaitDiagram,'.');
     set(gca,'YTickLabel',leg_labels)
 title([filePrefix ': New Gait diagram: foot velocity and leg angle detection'] )
 [~] = SaveFigAsPDF(f11,kPathname,filePrefix,'_GaitDiagram_Combined');
-
-% Replot old gait diagram for troubleshooting
-f3=figure;
-plot(time, gaitDiagramData,'.');
-xlabel('Time (s)')
-ylabel('Stance phases')
-%ylim([0.5 4.5])
-title( [filePrefix ': Initial Gait diagram: Foot velocity only.'])
-set(gca,'YTick',[1 2 3 4 5 6 7 8])
-set(gca,'YTickLabel',leg_labels)
     
 
 end
