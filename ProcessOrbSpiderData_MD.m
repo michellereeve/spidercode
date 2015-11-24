@@ -266,6 +266,7 @@ while filtGood == 'N'
     
 end %end while filtering loop for user adjustment of filter settings
 
+% ROTATION CODE SHOULD GO HERE, BEOFRE ANYTHING ELSE IS CALCULATED
 
 % pull out body data for subtracting angles from COM
 [filtBodyData] = PullOutBodyCoords (filtKineData,nRows);
@@ -284,7 +285,7 @@ end
 [legLengths,legLengthsMeanSub] = CalcLegLengths (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
 [legAngles,legAnglesMeanSub] = CalcLegAngles (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
 
-% plot leg lengths and angles for sanity check
+% plot leg lengths and angles for sanity check 
 f5 = figure();
 plot(time,legLengthsMeanSub);
 xlabel('Time (s)');
@@ -347,7 +348,7 @@ polar(legAnglesRad,legLengths);
 legend(leg_labels,'Location', 'eastoutside');
 title([filePrefix ': Leg Polar Plot (rel to COM)']);
 print([kPathname,filePrefix,'_LegPolarPlot'],'-dpdf');
-close(f9);
+%close(f9);
 
 
 %Save data after smoothing
@@ -516,15 +517,15 @@ plot(time, newGaitDiagram,'.');
 title([filePrefix ': New Gait diagram: foot velocity and leg angle detection'] )
 [~] = SaveFigAsPDF(f11,kPathname,filePrefix,'_GaitDiagram_Combined');
 
-    % Replot old gait diagram
-    f3=figure;
-    plot(time, gaitDiagramData,'.');
-    xlabel('Time (s)')
-    ylabel('Stance phases')
-    %ylim([0.5 4.5])
-    title( [filePrefix ': Initial Gait diagram: Foot velocity only. CLOSE'])
-    set(gca,'YTick',[1 2 3 4 5 6 7 8])
-    set(gca,'YTickLabel',leg_labels)
+% Replot old gait diagram for troubleshooting
+f3=figure;
+plot(time, gaitDiagramData,'.');
+xlabel('Time (s)')
+ylabel('Stance phases')
+%ylim([0.5 4.5])
+title( [filePrefix ': Initial Gait diagram: Foot velocity only.'])
+set(gca,'YTick',[1 2 3 4 5 6 7 8])
+set(gca,'YTickLabel',leg_labels)
     
 
 end
