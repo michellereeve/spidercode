@@ -90,16 +90,61 @@ yBody = [2:2:6];
 xCoords = [1:2:size(kineData,2)]; % all X coords
 yCoords = [2:2:size(kineData,2)]; % all Y coords
 
+% ROTATION CODE 
+startIdx = find(sum(isnan(kineData),2) == 0, 1,'first' );
+endIdx = find(sum(isnan(kineData),2) == 0, 1,'last' );
+originPt = kineData(startIdx,1:2); %XY coords of bodyCOM
+kineData = kineData - repmat(originPt,size(kineData,1),nPts);
+
+% Calculate the angle of motion and a rotation matrix
+deltaXtravelled = mean(kineData(endIdx,xCoords(1:2))- kineData(startIdx,xCoords(1:2)));
+deltaYtravelled = mean(kineData(endIdx,yCoords(1:2))- kineData(startIdx,yCoords(1:2)));
+rotation_angle = (atan2(deltaYtravelled,deltaXtravelled)).*-1;
+
+rotation_angle_deg = rad2deg(rotation_angle);
+rotation_matrix =  [  cos(rotation_angle), -sin(rotation_angle);
+    sin(rotation_angle),  cos(rotation_angle)];
+
+rotatedKineData = nan(size(kineData,1),size(kineData,2));
+
+%Rotate the data so that the primary direction of motion is fore-aft
+for k=1:nPts
+    c_point= [xCoords(k)  yCoords(k)];
+    c_vector = kineData(:,c_point)';
+    newVector = rotation_matrix*c_vector;
+    newVector = newVector';
+    rotatedKineData(:,c_point) = newVector;
+end
+
+if  deltaXtravelled <0
+    rotatedKineData(:,yPts) = rotatedKineData(:,yPts).*-1;
+end
+
+%Read just origin vertical minimum
+yMin = min(min(rotatedKineData(:,yCoords)));
+rotatedKineData(:,yCoords) = rotatedKineData(:,yCoords) - repmat(yMin,length(rotatedKineData(:,yCoords)),nPts);
+
+%Plot the original and rotated data for 'reality check'
+f1=figure;
+plot(kineData(:,xCoords), kineData(:,yCoords),'r');
+hold on;
+plot(kineData(1,xCoords), kineData(1,yCoords),'ro');
+plot(rotatedKineData(:,xCoords), rotatedKineData(:,yCoords),'b');
+plot(rotatedKineData(1,xCoords), rotatedKineData(1,yCoords),'bo');
+xlabel('x-coordinates')
+ylabel('y-coordinates')
+title([filePrefix ': Rotated kinematic data: red= raw, blue, rotated'])
+[~] = SaveFigAsPDF(f1,kPathname,filePrefix,'_RotatedData');
+
 % spline smooth data - output smData - plot smoothed data
 % Run with sptol set to zero to get raw velocity of each column (body XY, leg XY) (rawVel)
-[~,rawVel] = SplineInterp_wSPAPS(kineData, time, 0, 1);
+[~,rawVel] = SplineInterp_wSPAPS(rotatedKineData, time, 0, 1);
 
 % calculate raw resultant velocities - first 3 cols = bodyCOM, bodyBack, bodyFront, then legs 
 rawTotVel = sqrt(rawVel(:,xCoords).^2 + rawVel(:,yCoords).^2);
 
 % Run with sptol to get smoothed velocities (smVel)
-
-%Filtering section:  Spline filter data in a loop with user feedback
+% Filtering section:  Spline filter data in a loop with user feedback
 % Set default tolerance
 vel_sptol = 0.2; % sptol for smoothing velocities
 SSans=inputdlg('Filter settings (velocities)','Input spline tolerance',1,{num2str(vel_sptol)});
@@ -109,21 +154,21 @@ vel_sptol=str2num(SSans{1,1});
 filtGood = 'N';
 while filtGood == 'N'
     
-    [smKineData,smVel] = SplineInterp_wSPAPS(kineData, time, vel_sptol, 1);
+    [smKineData,smVel] = SplineInterp_wSPAPS(rotatedKineData, time, vel_sptol, 1);
 
     % calculate smoothed resultant velocity (smTotVel) from smoothed XY velocities (smVel)
     smTotVel = sqrt(smVel(:,xCoords).^2 + smVel(:,yCoords).^2);
 
     % plot some legs raw resultant vel and smoothed resultant vel to check sptol
-    f1=figure;
+    f2=figure;
     plot(time,rawTotVel(:,6),'r');
     hold on;
     plot(time, smTotVel(:,6),'b');
     xlabel('Time (s)')
     ylabel('Foot velocity (mm/s)')
     title([filePrefix ': Kinematic data: red = raw, blue = filtered | sptol = ' num2str(vel_sptol) ' CLOSE'])
-    [~] = SaveFigAsPDF(f1,kPathname,filePrefix,'_FiltVelocities');
-    waitfor(f1);
+    [~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_FiltVelocities');
+    waitfor(f2);
     
     filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
     filtGood=filtans{1,1};
@@ -144,6 +189,7 @@ end %end while filtering loop for user adjustment of filter settings
 
 % label legs
 leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
+leg_labels_anat = {'R4','L4','R3','L3','R2','L2','R1','L1'};
 
 %Calculate some velocity values for threshold detection of foot contact
 mean_legVel = nanmean(abs(smLegTotVel));
@@ -172,7 +218,7 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     
     %Debug plot:
     %Plot the stance phases, overlaid onto kinematic data
-    f2=figure;
+    f3=figure;
      hold on;
     for i = 1:4 
     subplot(4,1,i)
@@ -192,17 +238,16 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     subplot(4,1,1)
     hold on;
     title([filePrefix ': Detected stance phases, using velocity threshold = ' num2str(t_velThreshNum)])
-    [~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_VelocityDetection');
-    %close(f2);
-    %clear f2; 
+    [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_VelocityDetection');
+    %close(f3);
+    %clear f3; 
 
     %create gait diagram vectors
     gaitDiagramData = legContacts.* repmat([8 6 4 2 7 5 3 1],length(legContacts),1);
     gaitDiagramData(gaitDiagramData==0) = nan;
-    leg_labels_anat = {'R4','L4','R3','L3','R2','L2','R1','L1'};
 
 % plot gait diagram - NEW - in anatomical pairs as before
-    f3=figure;
+    f4=figure;
     hold on;
     for i=1:4
         col_i = SpidColors(i,:);
@@ -215,7 +260,7 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     title( [filePrefix ': Initial Gait diagram: Foot velocity only.'])
     set(gca,'YTick',[1 2 3 4 5 6 7 8])
     set(gca,'YTickLabel',leg_labels_anat)
-    [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
+    [~] = SaveFigAsPDF(f4,kPathname,filePrefix,'_GaitDiagram1');
     %waitfor(f3);
     
     threshans = inputdlg('Is this number good? (Y/N)','VelThresh Status',1,{'N'});
@@ -244,18 +289,18 @@ kin_sptol=str2num(SSans{1,1});
 filtGood = 'N';
 while filtGood == 'N'
     
-    [filtKineData] = SplineInterp_wSPAPS(kineData, time, kin_sptol, 1);
+    [filtRotKineData] = SplineInterp_wSPAPS(rotatedKineData, time, kin_sptol, 1);
 
     % plot some legs raw resultant vel and smoothed resultant vel to check sptol
-    f4=figure;
-    plot(kineData(:,xLegs),kineData(:,yLegs),'r');
+    f5=figure;
+    plot(rotatedKineData(:,xLegs),rotatedKineData(:,yLegs),'r');
     hold on;
-    plot(filtKineData(:,xLegs), filtKineData(:,yLegs),'b');
+    plot(filtRotKineData(:,xLegs), filtRotKineData(:,yLegs),'b');
     xlabel('X-coords')
     ylabel('Y-coords')
     title([filePrefix ': Kinematic data: red = raw, blue = filtered | sptol = ' num2str(kin_sptol) ' CLOSE'])
-    [~] = SaveFigAsPDF(f4,kPathname,filePrefix,'_FiltKineData');
-    waitfor(f4);
+    [~] = SaveFigAsPDF(f5,kPathname,filePrefix,'_FiltKineData');
+    waitfor(f5);
     
     filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
     filtGood=filtans{1,1};
@@ -267,68 +312,18 @@ while filtGood == 'N'
     
 end %end while filtering loop for user adjustment of filter settings
 
-%%
-% ROTATION CODE SHOULD GO HERE, BEOFRE ANYTHING ELSE IS CALCULATED
-startIdx = find(sum(isnan(filtKineData),2) == 0, 1,'first' );
-endIdx = find(sum(isnan(filtKineData),2) == 0, 1,'last' );
-originPt = filtKineData(startIdx,1:2); %XY coords of bodyCOM
-filtKineDataRot = filtKineData - repmat(originPt,size(filtKineData,1),nPts);
 
-% Calculate the angle of motion and a rotation matrix
-deltaXtravelled = mean(filtKineDataRot(endIdx,xCoords(1:2))- filtKineDataRot(startIdx,xCoords(1:2)));
-deltaYtravelled = mean(filtKineDataRot(endIdx,yCoords(1:2))- filtKineDataRot(startIdx,yCoords(1:2)));
-rotation_angle = (atan2(deltaYtravelled,deltaXtravelled)).*-1;
-
-rotation_angle_deg = rad2deg(rotation_angle);
-rotation_matrix =  [  cos(rotation_angle), -sin(rotation_angle);
-    sin(rotation_angle),  cos(rotation_angle)];
-
-rotatedData = nan(size(filtKineDataRot,1),size(filtKineDataRot,2));
-
-%Rotate the data so that the primary direction of motion is fore-aft
-for k=1:nPts
-    c_point= [xCoords(k)  yCoords(k)];
-    c_vector = filtKineDataRot(:,c_point)';
-    newVector = rotation_matrix*c_vector;
-    newVector = newVector';
-    rotatedData(:,c_point) = newVector;
-end
-
-if  deltaXtravelled <0
-    rotatedData(:,yPts) = rotatedData(:,yPts).*-1;
-end
-
-%Read just origin vertical minimum
-yMin = min(min(rotatedData(:,yCoords)));
-rotatedData(:,yCoords) = rotatedData(:,yCoords) - repmat(yMin,length(rotatedData(:,yCoords)),nPts);
-
-%Calculate velocity from rotated points
-[~,vel_xy] = SplineInterp_wSPAPS(rotatedData, time, 0, 2, time,0);
-
-%Plot the original and rotated data for 'reality check'
-f28=figure;
-plot(filtKineDataRot(:,xCoords), filtKineDataRot(:,yCoords),'r');
-hold on;
-plot(filtKineDataRot(1,xCoords), filtKineDataRot(1,yCoords),'ro');
-plot(rotatedData(:,xCoords), rotatedData(:,yCoords),'b');
-plot(rotatedData(1,xCoords), rotatedData(1,yCoords),'bo');
-xlabel('x-coordinates')
-ylabel('y-coordinates')
-title([filePrefix ': Rotated kinematic data: red= raw, blue, rotated'])
-[~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_RotatedData');
-
-%%
 % pull out body data for subtracting angles from COM
-[filtBodyData] = PullOutBodyCoords (filtKineData,nRows);
+[filtRBodyData] = PullOutBodyCoords (filtRotKineData,nRows);
 
 % pull out just leg data for calculating lengths and angles
-[filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtKineData,nRows);
+[filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtRotKineData,nRows);
 
 % Calculate legs Relative to body (Leg X/Y - COM X/Y)
 legDataRelToCOM = nan(nRows,size(filtLegData,2));
 for i=1:8
-    legDataRelToCOM(:,filtXNewLegs(i)) = filtLegData(:,filtXNewLegs(i)) - filtBodyData(:,1);
-    legDataRelToCOM(:,filtYNewLegs(i)) = filtLegData(:,filtYNewLegs(i)) - filtBodyData(:,2);
+    legDataRelToCOM(:,filtXNewLegs(i)) = filtLegData(:,filtXNewLegs(i)) - filtRBodyData(:,1);
+    legDataRelToCOM(:,filtYNewLegs(i)) = filtLegData(:,filtYNewLegs(i)) - filtRBodyData(:,2);
 end
 
 % calculate leg lengths & angles
@@ -336,7 +331,7 @@ end
 [legAngles,legAnglesMeanSub] = CalcLegAngles (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
 
 % plot leg lengths and angles for sanity check 
-f5 = figure();
+f6 = figure();
 for i=1:4
     subplot(4,1,i)
     hold on;
@@ -353,10 +348,10 @@ xlabel('Time (s)');
 subplot(4,1,1)
 hold on;
 title([filePrefix ': Leg Lengths (rel to COM, mean-subtracted)']);
-[~] = SaveFigAsPDF(f5,kPathname,filePrefix,'_LegLengths');
-%close(f5);
+[~] = SaveFigAsPDF(f6,kPathname,filePrefix,'_LegLengths');
+%close(f6);
 
-f6 = figure();
+f7 = figure();
 for i = 1:4 
 subplot(4,1,i)
 hold on;
@@ -373,28 +368,28 @@ plot(time,legAnglesMeanSub(:,i+4),'Color',col_i2);
     subplot(4,1,1)
     hold on;
     title([filePrefix ': Leg Angles (rel to COM, mean-substracted)'])
-    [~] = SaveFigAsPDF(f6,kPathname,filePrefix,'_LegAngles');
-    %close(f6);
+    [~] = SaveFigAsPDF(f7,kPathname,filePrefix,'_LegAngles');
+    %close(f7);
     
 % plot leg orbits - angle vs. length, mean-subtracted
-f7 = figure();
+f8 = figure();
 plot(legLengthsMeanSub,legAnglesMeanSub);
 ylabel('Angle (deg)');
 xlabel('Length (mm)');
 legend(leg_labels);
 title([filePrefix ': Leg Orbital Plot (rel to COM, mean-substracted)']);
-[~] = SaveFigAsPDF(f7,kPathname,filePrefix,'_LegOrbitalPlot');
-close(f7);
+[~] = SaveFigAsPDF(f8,kPathname,filePrefix,'_LegOrbitalPlot');
+close(f8);
 
 % plot leg orbits - angle vs. length, not mean-subtracted
-f8 = figure();
+f9 = figure();
 plot(legLengths,legAngles);
 ylabel('Angle (deg)');
 xlabel('Length (mm)');
 legend(leg_labels);
 title([filePrefix ': Leg Orbital Plot (rel to COM)']);
-[~] = SaveFigAsPDF(f8,kPathname,filePrefix,'_LegOrbitalPlot2');
-close(f8);
+[~] = SaveFigAsPDF(f9,kPathname,filePrefix,'_LegOrbitalPlot2');
+close(f9);
 
 % think I need to plot the leg orbits on separate plots for each leg, do a
 % subplot for each leg. Do I want mean-subtracted or not? Does it matter?
@@ -404,12 +399,12 @@ close(f8);
 
 % plot polar plots. Angle needs to be in radians. The act of calculating the
 % angles and lengths (already done) is equivalent to the cart2pol function.
-f9=(figure);
+f10=(figure);
 polar(legAnglesRad,legLengths);
 legend(leg_labels,'Location', 'eastoutside');
 title([filePrefix ': Leg Polar Plot (rel to COM)']);
 print([kPathname,filePrefix,'_LegPolarPlot'],'-dpdf');
-%close(f9);
+%close(f10);
 
 
 %Save data after smoothing
@@ -519,7 +514,7 @@ for i=1:8
 end
   
 %plot hilbert phases
-f10 = figure;
+f11 = figure;
  for i = 1:4 
 subplot(4,1,i)
 hold on;
@@ -529,8 +524,8 @@ plot(time,hilbert_phase(:,i),'Color',col_i);
 plot(time,hilbert_phase(:,i+4),'Color',col_i2);
     plot(time(eventStart_H1{i}), hilbert_phase(eventStart_H1{i},i),'kX');
     plot(time(eventStart_H1{i+4}), hilbert_phase(eventStart_H1{i+4},i+4),'kX');
-plot(time,hilbert_phase_inverted(:,i),':','Color',col_i);
-plot(time,hilbert_phase_inverted(:,i+4),':','Color',col_i2);
+plot(time,hilbert_phase_inverted(:,i),'--','Color',col_i);
+plot(time,hilbert_phase_inverted(:,i+4),'--','Color',col_i2);
     plot(time(eventStart_H2{i}), hilbert_phase_inverted(eventStart_H2{i},i),'kX');
     plot(time(eventStart_H2{i+4}), hilbert_phase_inverted(eventStart_H2{i+4},i+4),'kX');
 legend(['H1 L ' num2str(i)],['H1 R ' num2str(i)],'ED', 'ED',['H2 L ' num2str(i)], ['H2 R ' num2str(i)],'ED','ED');
@@ -542,29 +537,13 @@ xlabel('Time (s)')
 subplot(4,1,1)
 hold on;
 title([filePrefix ': Hilbert phase of leg angles'])
-[~] = SaveFigAsPDF(f10,kPathname,filePrefix,'_HilbertPhase');
+[~] = SaveFigAsPDF(f11,kPathname,filePrefix,'_HilbertPhase');
 %close(f10);
 
-% 
-% f3=figure;
-%     hold on;
-%     for i=1:4
-%         col_i = SpidColors(i,:);
-%         col_i2 = SpidColors(i+4,:);
-%         plot(time, gaitDiagramData(:,i),'.','Color',col_i);
-%         plot(time, gaitDiagramData(:,i+4),'.','Color',col_i2);     
-%     end
-%     xlabel('Time (s)')
-%     ylabel('Stance phases')
-%     title( [filePrefix ': Initial Gait diagram: Foot velocity only.'])
-%     set(gca,'YTick',[1 2 3 4 5 6 7 8])
-%     set(gca,'YTickLabel',leg_labels_anat)
-%     [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_GaitDiagram1');
 
- 
 %Plot the new gait diagram
 newGaitDiagramData = newGaitDiagram.* repmat([8 6 4 2 7 5 3 1],length(newGaitDiagram),1);
-f11= figure;
+f12= figure;
 hold on
     for i=1:4
         col_i = SpidColors(i,:);
@@ -577,7 +556,7 @@ hold on
      set(gca,'YTick',[1 2 3 4 5 6 7 8])
     set(gca,'YTickLabel',leg_labels_anat)
 title([filePrefix ': New Gait diagram: foot velocity and leg angle detection'] )
-[~] = SaveFigAsPDF(f11,kPathname,filePrefix,'_GaitDiagram_Combined');
+[~] = SaveFigAsPDF(f12,kPathname,filePrefix,'_GaitDiagram_Combined');
     
 
 end
