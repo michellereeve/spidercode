@@ -317,18 +317,20 @@ end %end while filtering loop for user adjustment of filter settings
 [filtRBodyData] = PullOutBodyCoords (filtRotKineData,nRows);
 
 % pull out just leg data for calculating lengths and angles
-[filtLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtRotKineData,nRows);
+[filtRLegData, filtXNewLegs, filtYNewLegs] = PullOutLegCoords (filtRotKineData,nRows);
 
 % Calculate legs Relative to body (Leg X/Y - COM X/Y)
-legDataRelToCOM = nan(nRows,size(filtLegData,2));
+legDataRelToCOM = nan(nRows,size(filtRLegData,2));
 for i=1:8
-    legDataRelToCOM(:,filtXNewLegs(i)) = filtLegData(:,filtXNewLegs(i)) - filtRBodyData(:,1);
-    legDataRelToCOM(:,filtYNewLegs(i)) = filtLegData(:,filtYNewLegs(i)) - filtRBodyData(:,2);
+    legDataRelToCOM(:,filtXNewLegs(i)) = filtRLegData(:,filtXNewLegs(i)) - filtRBodyData(:,1);
+    legDataRelToCOM(:,filtYNewLegs(i)) = filtRLegData(:,filtYNewLegs(i)) - filtRBodyData(:,2);
 end
+
 
 % calculate leg lengths & angles
 [legLengths,legLengthsMeanSub] = CalcLegLengths (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
 [legAngles,legAnglesMeanSub] = CalcLegAngles (legDataRelToCOM,nRows,filtXNewLegs,filtYNewLegs);
+
 
 % plot leg lengths and angles for sanity check 
 f6 = figure();
@@ -391,9 +393,6 @@ title([filePrefix ': Leg Orbital Plot (rel to COM)']);
 [~] = SaveFigAsPDF(f9,kPathname,filePrefix,'_LegOrbitalPlot2');
 close(f9);
 
-% think I need to plot the leg orbits on separate plots for each leg, do a
-% subplot for each leg. Do I want mean-subtracted or not? Does it matter?
-
 % convert legAngles to radians for the polar plot:
 [legAnglesRad] = deg2rad (legAngles);
 
@@ -405,7 +404,6 @@ legend(leg_labels,'Location', 'eastoutside');
 title([filePrefix ': Leg Polar Plot (rel to COM)']);
 print([kPathname,filePrefix,'_LegPolarPlot'],'-dpdf');
 %close(f10);
-
 
 %Save data after smoothing
 save([kPathname filePrefix])
@@ -441,7 +439,7 @@ combinedEvents = cell(8,1);
 refPhase = NaN(size(hilbert_phase,1),8);
 
 for i=1:8
-    eventStart_H1{i} = find(diff(hilbert_phase(:,i))<(0.25*pi.*-1));
+    eventStart_H1{i} = find(diff(hilbert_phase(:,i))<(0.25*pi*-1));
     eventStart_H2{i} = find(diff(hilbert_phase_inverted(:,i))<(0.25*pi*-1));
     % Right legs: hilbert 1 (H1) events correspond to foot off transitions
     % Left legs: hilbert 2 (H2) events correspond to foot off transitions
@@ -559,6 +557,21 @@ title([filePrefix ': New Gait diagram: foot velocity and leg angle detection'] )
 [~] = SaveFigAsPDF(f12,kPathname,filePrefix,'_GaitDiagram_Combined');
     
 
+%% Testing - plotting hilberts on top of angles
+f13 = figure;
+for i=1:8
+    subplot(8,1,i)
+    hold on;
+    plot(time,legAnglesMeanSub(:,i));
+    plot(time,hilbert_phase(:,i));
+    plot(time,hilbert_phase_inverted(:,i));
+    legend('Angle','H','H-inv');
+    title(['leg' num2str(i)]); 
+    if i==8
+        xlabel('Time(s)');
+    end
+end
+
 end
 
 
@@ -668,15 +681,16 @@ legAnglesMeanSub = nan(nRows,length(filtXNewLegs));
 
 for i=1:8 
     % calculate leg angles
-    legAngles(:,i) = atan2d(legDataRelToCOM(:,filtYNewLegs(i)),legDataRelToCOM(:,filtXNewLegs(i)));
-    %subtract mean leg angle - NEED TO CHANGE THIS TO CIRCULAR NANMEAN?
-    legAnglesMeanSub(:,i) = legAngles(:,i) - nanmean(legAngles(:,i));
-%     % unwrapped angles... do I need these?
-%     legAnglesMeanSubUnwrap = unwrap(legAnglesMeanSub);
-    % find values < 0, replace with 360-abs(angle_value)
-    
+    legAngles(:,i) = atan2d(legDataRelToCOM(:,filtYNewLegs(i)),legDataRelToCOM(:,filtXNewLegs(i))); 
 end
+legAnglesRad = (pi/180).*(legAngles);
+legAngles = rad2deg(unwrap(legAnglesRad));
 
+for i=1:8
+     %subtract mean leg angle
+    legAnglesMeanSub(:,i) = legAngles(:,i) - nanmean(legAngles(:,i));
+end
+    
 
 end
 
