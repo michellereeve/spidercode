@@ -560,7 +560,7 @@ title([filePrefix ': New Gait diagram: foot velocity and leg angle detection'] )
 %% Testing - plotting hilberts on top of angles
 f13 = figure;
 for i=1:8
-    subplot(8,1,i)
+    subplot(4,2,i)
     hold on;
     plot(time,legAnglesMeanSub(:,i));
     plot(time,hilbert_phase(:,i));
