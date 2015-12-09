@@ -578,6 +578,7 @@ for i=1:8
 end
 suptitle([filePrefix ': Leg angles and Hilberts'] )
 [~] = SaveFigAsPDF(f13,kPathname,filePrefix,'_LegAnglesHilberts');
+%close(f13);
 
 %plot reference phases
 f14 = figure;
