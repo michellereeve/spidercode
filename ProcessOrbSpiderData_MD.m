@@ -557,7 +557,10 @@ title([filePrefix ': New Gait diagram: foot velocity and leg angle detection'] )
 [~] = SaveFigAsPDF(f12,kPathname,filePrefix,'_GaitDiagram_Combined');
     
 
-%% Testing - plotting hilberts on top of angles
+% Testing - plotting hilberts on top of angles to see if they match up
+% Reminder: 
+% Left legs H1 = foot ON (angle peaks) H2 = foot OFF (angle troughs)
+% Right legs H1 = foot OFF (angle peaks) H2 = foot ON (angle troughs)
 f13 = figure;
 for i=1:8
     subplot(4,2,i)
@@ -565,12 +568,44 @@ for i=1:8
     plot(time,legAnglesMeanSub(:,i));
     plot(time,hilbert_phase(:,i));
     plot(time,hilbert_phase_inverted(:,i));
-    legend('Angle','H','H-inv');
-    title(['leg' num2str(i)]); 
+    title([leg_labels(i)]);
+    if i==2
+        legend('Angle','H1','H2');
+    end
     if i==8
         xlabel('Time(s)');
     end
 end
+suptitle([filePrefix ': Leg angles and Hilberts'] )
+[~] = SaveFigAsPDF(f13,kPathname,filePrefix,'_LegAnglesHilberts');
+
+%plot reference phases
+f14 = figure;
+ for i = 1:4 
+subplot(4,1,i)
+hold on;
+col_i = SpidColors(i,:); 
+col_i2 = SpidColors(i+4,:);    
+plot(time,refPhase(:,i),'Color',col_i);
+plot(time,refPhase(:,i+4),'Color',col_i2);
+    % plot events for left legs (H2 = foot off)
+    plot(time(eventStart_H2{i}), refPhase(eventStart_H2{i},i),'ko'); % foot off
+    plot(time(eventStart_H1{i}), refPhase(eventStart_H1{i},i),'kX'); %foot on
+    % plot events for right legs (H1 = foot off)
+    plot(time(eventStart_H1{i+4}), refPhase(eventStart_H1{i+4},i+4),'ko'); % foot off
+    plot(time(eventStart_H2{i+4}), refPhase(eventStart_H2{i+4},i+4),'kX'); % foot on
+    
+legend(['L' num2str(i)],['R' num2str(i)],'FO', 'FD');
+if i == 2
+ ylabel('Hilbert phase')
+end
+ end
+xlabel('Time (s)')
+subplot(4,1,1)
+hold on;
+title([filePrefix ': Reference phases (with foot off/down events)'])
+[~] = SaveFigAsPDF(f14,kPathname,filePrefix,'_refPhase');
+%close(f14);
 
 end
 
