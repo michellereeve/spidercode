@@ -280,39 +280,23 @@ clear smKineData
 % Use raw kinematic data, smooth again for leg length/angle stuff. Not as
 % smoothed as before. Spline filter data in a loop with user feedback
  
-% Set default tolerance
+% Set default tolerance to same as that of velocity. Can change for a
+% separate smoothing step if I feel I need it in later files/analysis.
 kin_sptol = vel_sptol; % default sptol for calculating kinematic (angle/length) data
-SSans=inputdlg('Filter settings (kinetics)','Input spline tolerance',1,{num2str(kin_sptol)});
-kin_sptol=str2num(SSans{1,1});
 
-%Create a 'while' loop, allow user to adjust spline tolerances
-filtGood = 'N';
-while filtGood == 'N'
-    
-    [filtRotKineData] = SplineInterp_wSPAPS(rotatedKineData, time, kin_sptol, 1);
+[filtRotKineData] = SplineInterp_wSPAPS(rotatedKineData, time, kin_sptol, 1);
 
-    % plot some legs raw resultant vel and smoothed resultant vel to check sptol
-    f5=figure;
-    plot(rotatedKineData(:,xLegs),rotatedKineData(:,yLegs),'r');
-    hold on;
-    plot(filtRotKineData(:,xLegs), filtRotKineData(:,yLegs),'b');
-    xlabel('X-coords')
-    ylabel('Y-coords')
-    title([filePrefix ': Kinematic data: red = raw, blue = filtered | sptol = ' num2str(kin_sptol) ' CLOSE'])
-    [~] = SaveFigAsPDF(f5,kPathname,filePrefix,'_FiltKineData');
-    waitfor(f5);
-    
-    filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
-    filtGood=filtans{1,1};
-    
-    if filtGood == 'N'
-        SSans=inputdlg('Adjust Filter','Input new kin spline tolerance',1,{num2str(kin_sptol)});
-        kin_sptol=str2num(SSans{1,1}); 
-    end
-    
-end %end while filtering loop for user adjustment of filter settings
-
-
+% plot some legs raw resultant vel and smoothed resultant vel to check sptol
+f5=figure;
+plot(rotatedKineData(:,xLegs),rotatedKineData(:,yLegs),'r');
+hold on;
+plot(filtRotKineData(:,xLegs), filtRotKineData(:,yLegs),'b');
+xlabel('X-coords')
+ylabel('Y-coords')
+title([filePrefix ': Kinematic data: red = raw, blue = filtered | sptol = ' num2str(kin_sptol)])
+[~] = SaveFigAsPDF(f5,kPathname,filePrefix,'_FiltKineData');
+%close(f5);
+ 
 % pull out body data for subtracting angles from COM
 [filtRBodyData] = PullOutBodyCoords (filtRotKineData,nRows);
 
