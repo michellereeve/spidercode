@@ -261,7 +261,7 @@ velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
     set(gca,'YTick',[1 2 3 4 5 6 7 8])
     set(gca,'YTickLabel',leg_labels_anat)
     [~] = SaveFigAsPDF(f4,kPathname,filePrefix,'_GaitDiagram1');
-    %waitfor(f3);
+    %waitfor(f4);
     
     threshans = inputdlg('Is this number good? (Y/N)','VelThresh Status',1,{'N'});
     threshGood=threshans{1,1};
@@ -389,15 +389,6 @@ title([filePrefix ': Leg Polar Plot (rel to COM)']);
 print([kPathname,filePrefix,'_LegPolarPlot'],'-dpdf');
 %close(f10);
 
-%Save data after smoothing
-save([kPathname filePrefix])
-
-else    
-    load([kPathname filePrefix])
-end
-
-%%
-
 % calculate Hilbert phases (normal and inverted)
 for i=1:8
     hilbert_phase(:,i) = angle(hilbert(legAnglesMeanSub(:,i)));
@@ -422,9 +413,18 @@ velocityEvents = cell(8,1);
 combinedEvents = cell(8,1);
 refPhase = NaN(size(hilbert_phase,1),8);
 
+% set up for hilbert event detection while loop for user input
+hilEventDet_thresh = 0.1; % default threshold for detecting events from Hilbert
+SSans=inputdlg('HilbertEvent threshold settings','Input hilEventDet_thresh',1,{num2str(hilEventDet_thresh)});
+hilEventDet_thresh=str2num(SSans{1,1}); 
+
+%Create a 'while' loop, allow user to adjust hilbert threshold
+threshGood = 'N';
+while threshGood == 'N'
+
 for i=1:8
-    eventStart_H1{i} = find(diff(hilbert_phase(:,i))<(0.1*pi*-1));
-    eventStart_H2{i} = find(diff(hilbert_phase_inverted(:,i))<(0.1*pi*-1));
+    eventStart_H1{i} = find(diff(hilbert_phase(:,i))<(hilEventDet_thresh*pi*-1));
+    eventStart_H2{i} = find(diff(hilbert_phase_inverted(:,i))<(hilEventDet_thresh*pi*-1));
     % Right legs: hilbert 1 (H1) events correspond to foot off transitions
     % Left legs: hilbert 2 (H2) events correspond to foot off transitions
     
@@ -491,10 +491,47 @@ for i=1:8
         dutyFactor{i} =  NaN ;
         
     end
-   
-    
 end
+
+%plot reference phases
+f14 = figure;
+ for i = 1:4 
+subplot(4,1,i)
+hold on;
+col_i = SpidColors(i,:); 
+col_i2 = SpidColors(i+4,:);    
+plot(time,refPhase(:,i),'Color',col_i);
+plot(time,refPhase(:,i+4),'Color',col_i2);
+    % plot events for left legs (H2 = foot off)
+    plot(time(eventStart_H2{i}), refPhase(eventStart_H2{i},i),'ko'); % foot off
+    plot(time(eventStart_H1{i}), refPhase(eventStart_H1{i},i),'kX'); %foot on
+    % plot events for right legs (H1 = foot off)
+    plot(time(eventStart_H1{i+4}), refPhase(eventStart_H1{i+4},i+4),'ko'); % foot off
+    plot(time(eventStart_H2{i+4}), refPhase(eventStart_H2{i+4},i+4),'kX'); % foot on
+    
+legend(['L' num2str(i)],['R' num2str(i)],'FO', 'FD');
+if i == 2
+ ylabel('Hilbert phase')
+end
+ end
+xlabel('Time (s)')
+subplot(4,1,1)
+hold on;
+title([filePrefix ': Reference phases (with foot off/down events) | HilbertEvent threshold = ' num2str(hilEventDet_thresh) 'CLOSE'])
+[~] = SaveFigAsPDF(f14,kPathname,filePrefix,'_refPhase');
+waitfor(f14);
+
+    threshans = inputdlg('Is this number good? (Y/N)','hilEventDet_thresh Status',1,{'N'});
+    threshGood=threshans{1,1};
+    
+    if threshGood == 'N'
+        SSans=inputdlg('Adjust hilEventDet_thresh','Input new number',1,{num2str(hilEventDet_thresh)});
+        hilEventDet_thresh=str2num(SSans{1,1}); 
+    end
   
+end %end while loop
+
+
 %plot hilbert phases
 f11 = figure;
  for i = 1:4 
@@ -564,33 +601,12 @@ suptitle([filePrefix ': Leg angles and Hilberts'] )
 [~] = SaveFigAsPDF(f13,kPathname,filePrefix,'_LegAnglesHilberts');
 %close(f13);
 
-%plot reference phases
-f14 = figure;
- for i = 1:4 
-subplot(4,1,i)
-hold on;
-col_i = SpidColors(i,:); 
-col_i2 = SpidColors(i+4,:);    
-plot(time,refPhase(:,i),'Color',col_i);
-plot(time,refPhase(:,i+4),'Color',col_i2);
-    % plot events for left legs (H2 = foot off)
-    plot(time(eventStart_H2{i}), refPhase(eventStart_H2{i},i),'ko'); % foot off
-    plot(time(eventStart_H1{i}), refPhase(eventStart_H1{i},i),'kX'); %foot on
-    % plot events for right legs (H1 = foot off)
-    plot(time(eventStart_H1{i+4}), refPhase(eventStart_H1{i+4},i+4),'ko'); % foot off
-    plot(time(eventStart_H2{i+4}), refPhase(eventStart_H2{i+4},i+4),'kX'); % foot on
-    
-legend(['L' num2str(i)],['R' num2str(i)],'FO', 'FD');
-if i == 2
- ylabel('Hilbert phase')
+%Save data
+save([kPathname filePrefix])
+
+else    
+    load([kPathname filePrefix])
 end
- end
-xlabel('Time (s)')
-subplot(4,1,1)
-hold on;
-title([filePrefix ': Reference phases (with foot off/down events)'])
-[~] = SaveFigAsPDF(f14,kPathname,filePrefix,'_refPhase');
-%close(f14);
 
 end
 
