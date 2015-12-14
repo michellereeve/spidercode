@@ -570,7 +570,6 @@ waitfor(f14);
   
 end %end while loop
 
-
 %plot hilbert phases
 f11 = figure;
  for i = 1:4 
@@ -651,7 +650,12 @@ end
 % Reference leg = L3 (most cyclical - can change this later if I want)
 refLeg = 3;
 
-
+legPhaseDiffs = nan(size(rotatedKineData,1),7);
+for i= 1:8
+    if i~=3
+    legPhaseDiffs(:,i) = rad2deg(refPhase(:,refLeg) - refPhase(:,i));
+    end
+end
 
 end
 
