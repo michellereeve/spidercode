@@ -493,6 +493,45 @@ for i=1:8
     end
 end
 
+% %% save out stride parameters as csv
+% % create matrix
+% matrixHeaders = {'legNumber', 'strideNumber', 'stridePeriod', 'swingPeriod', 'stancePeriod', 'dutyFactor' };
+% 
+% saveMatrix = [];
+% 
+% for i=1:8
+% tempMatrix=[];
+% c_nRws = max([length(stancePeriod{i}) length(swingPeriod{i}) length(stridePeriod{i})]);
+% tempMatrix(1:c_nRws,1) = i;
+% tempMatrix(1:c_nRws,2) = 1:c_nRws;
+% tempMatrix(:,3) = stridePeriod{i};
+% tempMatrix(:,4) = swingPeriod{i};
+% tempMatrix(:,5) = stancePeriod{i};
+% tempMatrix(:,6) = dutyFactor{i};
+% 
+% if i==1
+%     saveMatrix_1 = tempMatrix;
+% elseif i==2
+%     saveMatrix_2 = tempMatrix;
+% elseif i==3
+%     saveMatrix_3 = tempMatrix;
+% elseif i==4 
+%     saveMatrix_4 = tempMatrix;
+% elseif i==5
+%     saveMatrix_5 = tempMatrix;
+% elseif i==6 
+%     saveMatrix_6 = tempMatrix;
+% elseif i==7 
+%     saveMatrix_7 = tempMatrix;
+% elseif i==8 
+%     saveMatrix_8 = tempMatrix;
+% end
+% clear tempMatrix;
+% end
+
+
+%%
+
 %plot reference phases
 f14 = figure;
  for i = 1:4 
@@ -517,7 +556,7 @@ end
 xlabel('Time (s)')
 subplot(4,1,1)
 hold on;
-title([filePrefix ': Reference phases (with foot off/down events) | HilbertEvent threshold = ' num2str(hilEventDet_thresh) 'CLOSE'])
+title([filePrefix ': Reference phases (with foot off/down events) | HilbertEvent threshold = ' num2str(hilEventDet_thresh) ' CLOSE'])
 [~] = SaveFigAsPDF(f14,kPathname,filePrefix,'_refPhase');
 waitfor(f14);
 
@@ -607,6 +646,12 @@ save([kPathname filePrefix])
 else    
     load([kPathname filePrefix])
 end
+
+% Calculate relative leg phases
+% Reference leg = L3 (most cyclical - can change this later if I want)
+refLeg = 3;
+
+
 
 end
 
