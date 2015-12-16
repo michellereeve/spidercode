@@ -457,11 +457,12 @@ for i=1:8
         stancePeriod{i} = (halfPeriods_combined(halfPeriods_combined(:,2)==-2,1))./framerate;
         swingPeriod{i} = (halfPeriods_combined(halfPeriods_combined(:,2)==2,1))./framerate;
         
-        stridePeriod{i} = [diff(newEventsSorted(newEventsSorted(:,2)== 1,1))]./framerate;            
+        % indexing to adjacent '-1' events, which correspond to foot off
+        stridePeriod{i} = [diff(newEventsSorted(newEventsSorted(:,2)== -1,1))]./framerate;            
 
-        if isempty(stridePeriod{i})
-              stridePeriod{i} = [diff(newEventsSorted(newEventsSorted(:,2)== -1,1))]./framerate;
-        end
+%         if isempty(stridePeriod{i})
+%               stridePeriod{i} = [diff(newEventsSorted(newEventsSorted(:,2)== 1,1))]./framerate;
+%         end
         
         t_end = min([length(stridePeriod{i}) length(stancePeriod{i})]);
         dutyFactor{i} =  stancePeriod{i}(1:t_end)./ stridePeriod{i}(1:t_end) ;
@@ -607,6 +608,8 @@ else
     load([kPathname filePrefix])
 end
 
+%Check for invalid values. 
+
 
 %Save out stride parameters as csv
 
@@ -634,6 +637,8 @@ end
  
 %Create output header row
 saveArrayHeaders = {'fileName' 'legNumber', 'strideNumber', 'stridePeriod', 'swingPeriod', 'stancePeriod','dutyFactor'};
+ % Add to output array:  swing and stance leg angular excursion for each
+ % leg,  swing and stance leg length excursions for each leg. 
  
 %Put together the numeric data with text data containing headers, filename
 compiledCellArray = cell(1,7); %note this has one additional column for the filename information
@@ -658,15 +663,41 @@ cell2csv([kPathname,filePrefix, '_Spreadsheet.csv' ], compiledCellArray)
 
 
 % Calculate relative leg phases
-% Reference leg = L3 (most cyclical - can change this later if I want)
-refLeg = 3;
+% Reference leg = L2 (Cyclical leg but not adjacent to a later ablated leg 
+% or part of the same segment pair)
+
+refLeg = 2;
 
 legPhaseDiffs = nan(size(rotatedKineData,1),7);
 for i= 1:8
-    if i~=3
     legPhaseDiffs(:,i) = rad2deg(refPhase(:,refLeg) - refPhase(:,i));
-    end
 end
+
+%Create a big output matrix with body motion and relative phases with
+%respect to reference leg (L2) 
+
+[~,bodyVelXY] = SplineInterp_wSPAPS(filtRBodyData, time, 0, 1);
+
+%atan2d(Y,X)
+bodyOrientation_deltaX = filtRBodyData(:,5)-filtRBodyData(:,3);
+bodyOrientation_deltaY = filtRBodyData(:,6)-filtRBodyData(:,4);
+bodyYawAngle = atan2d(bodyOrientation_deltaY,bodyOrientation_deltaX);
+bodyYawAngle = bodyYawAngle - mean(bodyYawAngle);
+bodyVelMag = sqrt(bodyVelXY(:,1).^2 + bodyVelXY(:,2).^2);
+bodyVelAng = atan2d(bodyVelXY(:,2),bodyVelXY(:,1));
+
+RefLegFootOffIndex =  combinedEvents{refLeg}(combinedEvents{refLeg}(:,2)==-1,1);
+
+strideLength = nan(length(RefLegFootOffIndex),1);
+strideVelocity = nan(length(RefLegFootOffIndex),1);
+strideLength(2:end) = sqrt((diff(filtRBodyData(RefLegFootOffIndex,1)).^2 + diff(filtRBodyData(RefLegFootOffIndex,2)).^2));%in mm
+strideVelocity(2:end) = strideLength(2:end)./(diff(RefLegFootOffIndex)./framerate); %mm per second
+
+RefLegFootOffTimes = RefLegFootOffIndex./framerate; 
+
+body_phase_SaveMatrix = [RefLegFootOffTimes bodyVelMag(RefLegFootOffIndex) bodyVelAng(RefLegFootOffIndex) bodyYawAngle(RefLegFootOffIndex) strideLength strideVelocity legPhaseDiffs(RefLegFootOffIndex,:)];
+body_phase_Header = {'RefLegFootOffTimes','bodyVelMag','bodyVelAng','bodyYawAngle','strideLength','strideVelocity','legPhaseDiff1','legPhaseDiff2', 'legPhaseDiff3','legPhaseDiff4','legPhaseDiff5','legPhaseDiff6','legPhaseDiff7','legPhaseDiff8'};
+
 
 end
 
