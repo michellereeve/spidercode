@@ -493,45 +493,6 @@ for i=1:8
     end
 end
 
-% %% save out stride parameters as csv
-% % create matrix
-% matrixHeaders = {'legNumber', 'strideNumber', 'stridePeriod', 'swingPeriod', 'stancePeriod', 'dutyFactor' };
-% 
-% saveMatrix = [];
-% 
-% for i=1:8
-% tempMatrix=[];
-% c_nRws = max([length(stancePeriod{i}) length(swingPeriod{i}) length(stridePeriod{i})]);
-% tempMatrix(1:c_nRws,1) = i;
-% tempMatrix(1:c_nRws,2) = 1:c_nRws;
-% tempMatrix(:,3) = stridePeriod{i};
-% tempMatrix(:,4) = swingPeriod{i};
-% tempMatrix(:,5) = stancePeriod{i};
-% tempMatrix(:,6) = dutyFactor{i};
-% 
-% if i==1
-%     saveMatrix_1 = tempMatrix;
-% elseif i==2
-%     saveMatrix_2 = tempMatrix;
-% elseif i==3
-%     saveMatrix_3 = tempMatrix;
-% elseif i==4 
-%     saveMatrix_4 = tempMatrix;
-% elseif i==5
-%     saveMatrix_5 = tempMatrix;
-% elseif i==6 
-%     saveMatrix_6 = tempMatrix;
-% elseif i==7 
-%     saveMatrix_7 = tempMatrix;
-% elseif i==8 
-%     saveMatrix_8 = tempMatrix;
-% end
-% clear tempMatrix;
-% end
-
-
-%%
-
 %plot reference phases
 f14 = figure;
  for i = 1:4 
@@ -639,12 +600,62 @@ suptitle([filePrefix ': Leg angles and Hilberts'] )
 [~] = SaveFigAsPDF(f13,kPathname,filePrefix,'_LegAnglesHilberts');
 %close(f13);
 
-%Save data
+%Save data as Mat file
 save([kPathname filePrefix])
 
 else    
     load([kPathname filePrefix])
 end
+
+
+%Save out stride parameters as csv
+
+%Create empty matrix for final leg matrix (all legs compiled)
+saveMatrix = [];
+ 
+for i=1:8 %For all 8 legs
+    c_nRws = max([length(stancePeriod{i}) length(swingPeriod{i}) length(stridePeriod{i})]);
+    %Matrix for current leg data
+    tempMatrix = nan(c_nRws,6); %create temp matrix full of NaNs 
+
+    tempMatrix(1:c_nRws,1) = repmat(i,c_nRws,1); %leg number
+    tempMatrix(1:c_nRws,2) = [1:c_nRws]; %stride number
+    tempMatrix(1:(length(stridePeriod{i})),3) = stridePeriod{i}; %note indexing here in case this variable has less than the max strides
+    tempMatrix(1:(length(swingPeriod{i})),4) = swingPeriod{i};
+    tempMatrix(1:(length(stancePeriod{i})),5) = stancePeriod{i};
+    tempMatrix(1:(length(dutyFactor{i})),6) = dutyFactor{i};
+
+    %concatenate current leg data into the final leg matrix (replacing your sequence of if statements)
+    saveMatrix = [saveMatrix; tempMatrix]; 
+end
+ 
+%Create a cell array to save as a ?csv? spreadsheet that includes filename information and headers within the file.
+%Filename is repeated in each row so that multiple files can be compiled into a single spreadsheet later. 
+ 
+%Create output header row
+saveArrayHeaders = {'fileName' 'legNumber', 'strideNumber', 'stridePeriod', 'swingPeriod', 'stancePeriod','dutyFactor'};
+ 
+%Put together the numeric data with text data containing headers, filename
+compiledCellArray = cell(1,7); %note this has one additional column for the filename information
+
+%Create temporary cell for to hold column with fileName
+c_saveCell1 = cell(size(saveMatrix,1), 1); 
+[c_saveCell1{:,1}] = deal(filePrefix);
+
+%Convert data from matrix to cell array for saving:
+c_saveCell2 =  num2cell(saveMatrix);
+
+%Compile filename column with data columns into a single cell array
+c_saveCell = horzcat(c_saveCell1,c_saveCell2);
+
+%Create a headers row for the top of the spreadsheet:
+[compiledCellArray{1,1:end}] = deal(saveArrayHeaders{:});
+%Put the headers row together with the data:
+compiledCellArray = vertcat(compiledCellArray,c_saveCell);
+
+%Save the cell array to a file: 
+cell2csv([kPathname,filePrefix, '_Spreadsheet.csv' ], compiledCellArray)
+
 
 % Calculate relative leg phases
 % Reference leg = L3 (most cyclical - can change this later if I want)
