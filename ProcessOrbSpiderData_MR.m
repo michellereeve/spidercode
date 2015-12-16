@@ -614,52 +614,52 @@ end
 %Save out stride parameters as csv
 
 %Create empty matrix for final leg matrix (all legs compiled)
-saveMatrix = [];
+legs_strides_SaveMatrix = [];
  
 for i=1:8 %For all 8 legs
     c_nRws = max([length(stancePeriod{i}) length(swingPeriod{i}) length(stridePeriod{i})]);
     %Matrix for current leg data
-    tempMatrix = nan(c_nRws,6); %create temp matrix full of NaNs 
+    legs_strides_tempMatrix = nan(c_nRws,6); %create temp matrix full of NaNs 
 
-    tempMatrix(1:c_nRws,1) = repmat(i,c_nRws,1); %leg number
-    tempMatrix(1:c_nRws,2) = [1:c_nRws]; %stride number
-    tempMatrix(1:(length(stridePeriod{i})),3) = stridePeriod{i}; %note indexing here in case this variable has less than the max strides
-    tempMatrix(1:(length(swingPeriod{i})),4) = swingPeriod{i};
-    tempMatrix(1:(length(stancePeriod{i})),5) = stancePeriod{i};
-    tempMatrix(1:(length(dutyFactor{i})),6) = dutyFactor{i};
+    legs_strides_tempMatrix(1:c_nRws,1) = repmat(i,c_nRws,1); %leg number
+    legs_strides_tempMatrix(1:c_nRws,2) = [1:c_nRws]; %stride number
+    legs_strides_tempMatrix(1:(length(stridePeriod{i})),3) = stridePeriod{i}; %note indexing here in case this variable has less than the max strides
+    legs_strides_tempMatrix(1:(length(swingPeriod{i})),4) = swingPeriod{i};
+    legs_strides_tempMatrix(1:(length(stancePeriod{i})),5) = stancePeriod{i};
+    legs_strides_tempMatrix(1:(length(dutyFactor{i})),6) = dutyFactor{i};
 
-    %concatenate current leg data into the final leg matrix (replacing your sequence of if statements)
-    saveMatrix = [saveMatrix; tempMatrix]; 
+    %concatenate current leg data into the final leg matrix
+    legs_strides_SaveMatrix = [legs_strides_SaveMatrix; legs_strides_tempMatrix]; 
 end
  
 %Create a cell array to save as a ?csv? spreadsheet that includes filename information and headers within the file.
 %Filename is repeated in each row so that multiple files can be compiled into a single spreadsheet later. 
  
 %Create output header row
-saveArrayHeaders = {'fileName' 'legNumber', 'strideNumber', 'stridePeriod', 'swingPeriod', 'stancePeriod','dutyFactor'};
+legs_strides_Header = {'fileName' 'legNumber', 'strideNumber', 'stridePeriod', 'swingPeriod', 'stancePeriod','dutyFactor'};
  % Add to output array:  swing and stance leg angular excursion for each
  % leg,  swing and stance leg length excursions for each leg. 
  
 %Put together the numeric data with text data containing headers, filename
-compiledCellArray = cell(1,7); %note this has one additional column for the filename information
+ls_compiledCellArray = cell(1,7); %note this has one additional column for the filename information
 
 %Create temporary cell for to hold column with fileName
-c_saveCell1 = cell(size(saveMatrix,1), 1); 
-[c_saveCell1{:,1}] = deal(filePrefix);
+c_ls_saveCell1 = cell(size(legs_strides_SaveMatrix,1), 1); 
+[c_ls_saveCell1{:,1}] = deal(filePrefix);
 
 %Convert data from matrix to cell array for saving:
-c_saveCell2 =  num2cell(saveMatrix);
+c_ls_saveCell2 =  num2cell(legs_strides_SaveMatrix);
 
 %Compile filename column with data columns into a single cell array
-c_saveCell = horzcat(c_saveCell1,c_saveCell2);
+c_saveCell = horzcat(c_ls_saveCell1,c_ls_saveCell2);
 
 %Create a headers row for the top of the spreadsheet:
-[compiledCellArray{1,1:end}] = deal(saveArrayHeaders{:});
+[ls_compiledCellArray{1,1:end}] = deal(legs_strides_Header{:});
 %Put the headers row together with the data:
-compiledCellArray = vertcat(compiledCellArray,c_saveCell);
+ls_compiledCellArray = vertcat(ls_compiledCellArray,c_saveCell);
 
 %Save the cell array to a file: 
-cell2csv([kPathname,filePrefix, '_Spreadsheet.csv' ], compiledCellArray)
+cell2csv([kPathname,filePrefix, '_Data_Leg_Stride.csv' ], ls_compiledCellArray)
 
 
 % Calculate relative leg phases
@@ -696,7 +696,39 @@ strideVelocity(2:end) = strideLength(2:end)./(diff(RefLegFootOffIndex)./framerat
 RefLegFootOffTimes = RefLegFootOffIndex./framerate; 
 
 body_phase_SaveMatrix = [RefLegFootOffTimes bodyVelMag(RefLegFootOffIndex) bodyVelAng(RefLegFootOffIndex) bodyYawAngle(RefLegFootOffIndex) strideLength strideVelocity legPhaseDiffs(RefLegFootOffIndex,:)];
-body_phase_Header = {'RefLegFootOffTimes','bodyVelMag','bodyVelAng','bodyYawAngle','strideLength','strideVelocity','legPhaseDiff1','legPhaseDiff2', 'legPhaseDiff3','legPhaseDiff4','legPhaseDiff5','legPhaseDiff6','legPhaseDiff7','legPhaseDiff8'};
+body_phase_Headers = {'fileName', 'RefLegFootOffTimes','bodyVelMag','bodyVelAng','bodyYawAngle','strideLength','strideVelocity','legPhaseDiff1','legPhaseDiff2', 'legPhaseDiff3','legPhaseDiff4','legPhaseDiff5','legPhaseDiff6','legPhaseDiff7','legPhaseDiff8'};
+
+%Put together the numeric data with text data containing headers, filename
+bp_compiledCellArray = cell(1,15); 
+%Create temporary cell for to hold column with fileName
+c_bp_saveCell1 = cell(size(body_phase_SaveMatrix,1), 1); 
+[c_bp_saveCell1{:,1}] = deal(filePrefix);
+%Convert data from matrix to cell array for saving:
+c_bp_saveCell2 =  num2cell(body_phase_SaveMatrix);
+%Compile filename column with data columns into a single cell array
+c_bp_saveCell = horzcat(c_bp_saveCell1,c_bp_saveCell2);
+%Create a headers row for the top of the spreadsheet:
+[bp_compiledCellArray{1,1:end}] = deal(body_phase_Headers{:});
+%Put the headers row together with the data:
+bp_compiledCellArray = vertcat(bp_compiledCellArray,c_bp_saveCell);
+
+%Save the cell array to a file: 
+cell2csv([kPathname,filePrefix, '_Data_Body_Phase.csv' ], bp_compiledCellArray)
+
+
+
+% plot & save bodyVelMag with locations of RefLegFootOffIndex marked, for possible
+% debugging/interest later
+f14 = figure;
+plot(time,bodyVelMag);
+hold on
+plot (time(RefLegFootOffIndex),bodyVelMag(RefLegFootOffIndex),'X','MarkerSize',12);
+xlabel('Time (s)')
+ylabel('COM velocity (mm/s)')
+legend ('Velocity','RefLegFootOffIndex')
+title([filePrefix ': COM Velocity'] )
+[~] = SaveFigAsPDF(f14,kPathname,filePrefix,'_BodyVelMag_RefLegFOInd');
+close(f14);
 
 
 end
