@@ -465,8 +465,17 @@ for i=1:8
 %         end
         
         t_end = min([length(stridePeriod{i}) length(stancePeriod{i})]);
-        dutyFactor{i} =  stancePeriod{i}(1:t_end)./ stridePeriod{i}(1:t_end) ;
+        dutyFactor{i} =  stancePeriod{i}(1:t_end)./ stridePeriod{i}(1:t_end);
         
+        % find values where dutyFactor is <0 - this indicates some
+        % problematic stride/stance periods. Replace these strides with NaN
+        badValues = find([dutyFactor{i,:}]<0);
+        dutyFactor{i,1}(badValues) = NaN;%Note that the index badValues comes after the cell index. 
+        stancePeriod{i,1}(badValues) = NaN;
+        swingPeriod{i,1}(badValues) = NaN;
+        stridePeriod{i,1}(badValues) = NaN;
+        
+ 
         %New gait diagram
         fD_Events = newEventsSorted(newEventsSorted(:,2)== 1,1);
         fO_Events = newEventsSorted(newEventsSorted(:,2)== -1,1);
@@ -665,7 +674,6 @@ cell2csv([kPathname,filePrefix, '_Data_Leg_Stride.csv' ], ls_compiledCellArray)
 % Calculate relative leg phases
 % Reference leg = L2 (Cyclical leg but not adjacent to a later ablated leg 
 % or part of the same segment pair)
-
 refLeg = 2;
 
 legPhaseDiffs = nan(size(rotatedKineData,1),7);
@@ -698,6 +706,7 @@ RefLegFootOffTimes = RefLegFootOffIndex./framerate;
 body_phase_SaveMatrix = [RefLegFootOffTimes bodyVelMag(RefLegFootOffIndex) bodyVelAng(RefLegFootOffIndex) bodyYawAngle(RefLegFootOffIndex) strideLength strideVelocity legPhaseDiffs(RefLegFootOffIndex,:)];
 body_phase_Headers = {'fileName', 'RefLegFootOffTimes','bodyVelMag','bodyVelAng','bodyYawAngle','strideLength','strideVelocity','legPhaseDiff1','legPhaseDiff2', 'legPhaseDiff3','legPhaseDiff4','legPhaseDiff5','legPhaseDiff6','legPhaseDiff7','legPhaseDiff8'};
 
+
 %Put together the numeric data with text data containing headers, filename
 bp_compiledCellArray = cell(1,15); 
 %Create temporary cell for to hold column with fileName
@@ -714,7 +723,6 @@ bp_compiledCellArray = vertcat(bp_compiledCellArray,c_bp_saveCell);
 
 %Save the cell array to a file: 
 cell2csv([kPathname,filePrefix, '_Data_Body_Phase.csv' ], bp_compiledCellArray)
-
 
 
 % plot & save bodyVelMag with locations of RefLegFootOffIndex marked, for possible
