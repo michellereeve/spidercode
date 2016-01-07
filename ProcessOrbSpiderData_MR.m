@@ -469,7 +469,7 @@ for i=1:8
         
         % find values where dutyFactor is <0 - this indicates some
         % problematic stride/stance periods. Replace these strides with NaN
-        badValues = find([dutyFactor{i,:}]<0);
+        badValues = find([dutyFactor{i,:}]<0 | [dutyFactor{i,:}]>1);
         dutyFactor{i,1}(badValues) = NaN;%Note that the index badValues comes after the cell index. 
         stancePeriod{i,1}(badValues) = NaN;
         swingPeriod{i,1}(badValues) = NaN;
