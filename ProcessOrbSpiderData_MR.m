@@ -503,6 +503,19 @@ for i=1:8
     end
 end
 
+% calculate leg angle excursions
+% need to add stuff in for loop to cycle thru strides (Sn = Stride number)
+% - nested loop? Or two indicies in one loop?
+
+Sn = length(footOff_I);
+for S = 1:Sn
+    for i = 1:8
+        stanceAngleExcur{i,1}(S,1) = (legAnglesMeanSub(footOff_I{i,:}(S,1),i) - legAnglesMeanSub(footDown_I{i,:}(S,1),i));
+        swingAngleExcur{i,1}(S,1) = (legAnglesMeanSub(footDown_I{i,:}(S+1,1),i) - legAnglesMeanSub(footOff_I{i,:}(S,1),i));
+    end
+end
+
+
 %plot reference phases
 f14 = figure;
  for i = 1:4 
@@ -620,7 +633,7 @@ end
 %Check for invalid values. 
 
 
-%Save out stride parameters as csv
+% SAVE OUT STRIDE PARAMETERS AS CSV - LEGS/STRIDES
 
 %Create empty matrix for final leg matrix (all legs compiled)
 legs_strides_SaveMatrix = [];
@@ -641,7 +654,7 @@ for i=1:8 %For all 8 legs
     legs_strides_SaveMatrix = [legs_strides_SaveMatrix; legs_strides_tempMatrix]; 
 end
  
-%Create a cell array to save as a ?csv? spreadsheet that includes filename information and headers within the file.
+%Create a cell array to save as a CSV that includes filename information and headers within the file.
 %Filename is repeated in each row so that multiple files can be compiled into a single spreadsheet later. 
  
 %Create output header row
