@@ -492,6 +492,20 @@ for i=1:8
             newGaitDiagram(curStanceIndex,i) = 1;%.*i;
         end
         
+        % calculate leg angle excursions - currently set to loop through
+        % the min no. of strides (Sn) found from foot off/down events for
+        % that leg
+        Sn = min(length(fD_Events),length(fO_Events));   
+        for S = 1:Sn
+            S_plusone = S+1;
+            stanceAngleExcur{i,1}(S,1) = (legAnglesMeanSub(fO_Events(S,1),i)) - (legAnglesMeanSub(fD_Events(S,1),i));
+                if S ~= Sn
+                 swingAngleExcur{i,1}(S,1) = (legAnglesMeanSub(fD_Events(S_plusone,1),i)) - (legAnglesMeanSub(fO_Events(S,1),i));
+                else
+                 swingAngleExcur{i,1}(S,1) = NaN;   
+                end
+        end
+        
     else %If there are not enough events to calculate full stride cycles for this leg,  enter NaNs
         newEventsSorted = NaN;
         combinedEvents{i} = newEventsSorted;
@@ -499,7 +513,7 @@ for i=1:8
         swingPeriod{i} = NaN;
         stridePeriod{i} = NaN;
         dutyFactor{i} =  NaN ;
-        
+        % add angle excursion NaNs here?
     end
 end
 
@@ -507,13 +521,13 @@ end
 % need to add stuff in for loop to cycle thru strides (Sn = Stride number)
 % - nested loop? Or two indicies in one loop?
 
-Sn = length(footOff_I);
-for S = 1:Sn
-    for i = 1:8
-        stanceAngleExcur{i,1}(S,1) = (legAnglesMeanSub(footOff_I{i,:}(S,1),i) - legAnglesMeanSub(footDown_I{i,:}(S,1),i));
-        swingAngleExcur{i,1}(S,1) = (legAnglesMeanSub(footDown_I{i,:}(S+1,1),i) - legAnglesMeanSub(footOff_I{i,:}(S,1),i));
-    end
-end
+% Sn = max(cellfun(@length,footOff_I));
+% for S = 1:Sn
+%     for i = 1:8
+%         stanceAngleExcur{i,1}(S,1) = (legAnglesMeanSub(footOff_I{i,:}(S,1),i) - legAnglesMeanSub(footDown_I{i,:}(S,1),i));
+%         swingAngleExcur{i,1}(S,1) = (legAnglesMeanSub(footDown_I{i,:}(S+1,1),i) - legAnglesMeanSub(footOff_I{i,:}(S,1),i));
+%     end
+% end
 
 
 %plot reference phases
