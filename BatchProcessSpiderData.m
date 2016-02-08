@@ -14,15 +14,19 @@ pathName = [dataFolder sep];
 dirStructure = dir([pathName '*.csv']);
 [fileNamesArray{1:size(dirStructure)}] = deal(dirStructure.name);
 
+%Create a new folder to save the results files into
+mkdir([pathName '_Results' sep]);
+saveDir = dirCheck([pathName '_Results' sep ]);
+
 strides_CompiledCellArray = cell(1,12);
-bodyPhase_CompiledCellArray = cell(1,16);
+bodyPhase_CompiledCellArray = cell(1,18);
 
 for f = 1:length(fileNamesArray)
     
 c_fileName = fileNamesArray{f};
 
-%[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Chloe(c_fileName,pathName);
-[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_OrbW(c_fileName,pathName);
+[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Chloe(c_fileName,pathName);
+%[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Orb2(c_fileName,pathName);
 close all;
 
 if f == 1
@@ -33,10 +37,12 @@ end
 strides_CompiledCellArray = vertcat(strides_CompiledCellArray,ls_compiledCellArray); %#ok<AGROW>
 bodyPhase_CompiledCellArray = vertcat(bodyPhase_CompiledCellArray,bp_compiledCellArray); %#ok<AGROW>
 
-
 end
 
- cell2csv([pathName 'LegStridesCompiledData.csv' ], strides_CompiledCellArray)
- cell2csv([pathName 'BodyPhaseCompiledData.csv' ], bodyPhase_CompiledCellArray)
+%Create a new 'Output' folder to save the processed data files into
+
+
+ cell2csv([saveDir 'LegStridesCompiledData.csv' ], strides_CompiledCellArray)
+ cell2csv([saveDir 'BodyPhaseCompiledData.csv' ], bodyPhase_CompiledCellArray)
 
  

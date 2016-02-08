@@ -1,5 +1,11 @@
-function [out_bp_compiledArray,body_phase_Headers, out_LS_compiledArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Chloe(fileName,pathName)
+function [out_bp_compiledArray,body_phase_Headers, out_LS_compiledArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Orb2(fileName,pathName)
 % A script to process spider gait data (initially orb-weaver, intact trials)
+
+%Utility variable
+if isempty(strfind(computer,'MAC'))
+    sep = '\';
+else sep = '/';
+end
 
 % set ColourOrder for plots - need 8 colours, default is 7
 SpidColors = [0 0.4470 0.7410;
@@ -17,18 +23,21 @@ set(groot,'defaultAxesColorOrder',SpidColors);
 if ~exist('fileName','var')
     %Browse for the file
     [kFilename, kPathname] = uigetfile(['.csv'], 'Choose coordinate data text (csv) file');
+    mkdir([kPathname '_Results' sep ]);
 else
     kFilename = fileName;
     kPathname = pathName;
 end
 filePrefix = kFilename(1:(end-13));
 
+%Create a new folder to save the results files into
+savePathN = dirCheck([kPathname '_Results' sep ]);
+
 %Check for previously processed file, to skip smoothing steps if possible
 if ~exist([kPathname filePrefix '.mat'],'file')
     
     % set framerate
     framerate = 1000;
-    
     % load in data file (tempData) - dlmread / csvread
     tempData = csvread([kPathname kFilename]);
     
@@ -42,7 +51,6 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     % 11-12 = L2 X,Y
     % 13-14 = L3 X,Y ... so from #9, odd numbers are X, even numbers are Y
     % ends at 24 (R4 Y)
-    
     
     % Columns (for intact data, with eggsac):
     % 1 Frame
@@ -60,8 +68,7 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     % 21-22 R2 X/Y
     % 23-24 R3 X/Y
     % 25-26 R4 X/Y
-    
-    
+     
     nCols = size(tempData,2);
     
     %The section below checks for NaN values at the beginning and end
@@ -125,21 +132,28 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     nCols = size(kineData,2); %update to new dataset
     nPts = fix(nCols./2);
     
-    %This section will need to be updated to distinguish 
-    % 'intact' and 'ablation' trials for Michelle's data
-    % current set up to distinguish trials with and without egg sac point
+    %Specify column indices for body and legs
+    %This section below will need to be updated to distinguish 
+    % 'intact' and 'ablation' trials
+    
     if strcmp(kFilename(1:2),'03')==1 || strcmp(kFilename(1:2),'04')==1
-        % set some variables for kineData - XY data
+        %Wolf Spider trials with no egg sac
         xLegsIndex = [7:2:size(kineData,2)];
         yLegsIndex = [8:2:size(kineData,2)];
         xBodyIndex = [1:2:5];
         yBodyIndex = [2:2:6];
-    else
-        % set some variables for kineData - XY data
+    elseif strcmp(kFilename(1:2),'01')==1 || strcmp(kFilename(1:2),'02')==1
+        % Wold spider trials with egg sac
         xLegsIndex = [9:2:size(kineData,2)];
         yLegsIndex = [10:2:size(kineData,2)];
         xBodyIndex = [1:2:7]; %Additional body point for egg sac
         yBodyIndex = [2:2:8];
+    else
+        %Intact trials for orb weaver data set
+        xLegsIndex = [7:2:size(kineData,2)];
+        yLegsIndex = [8:2:size(kineData,2)];
+        xBodyIndex = [1:2:5];
+        yBodyIndex = [2:2:6];
     end
     
     xCoordsIndex = [1:2:size(kineData,2)]; % all X coords
@@ -149,40 +163,11 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     % or part of the same segment pair)
     refLeg = 2;
     
-    % ROTATION CODE
-    startIdx = find(sum(isnan(kineData),2) == 0, 1,'first' );
-    endIdx = find(sum(isnan(kineData),2) == 0, 1,'last' );
-    originPt = kineData(startIdx,1:2); %XY coords of bodyCOM
-    kineData = kineData - repmat(originPt,size(kineData,1),nPts);
-    
-    % Calculate the angle of motion and a rotation matrix
-    deltaXtravelled = mean(kineData(endIdx,xBodyIndex)- kineData(startIdx,xBodyIndex));
-    deltaYtravelled = mean(kineData(endIdx,yBodyIndex)- kineData(startIdx,yBodyIndex));
-    rotation_angle = (atan2(deltaYtravelled,deltaXtravelled)).*-1;
-    
-    rotation_angle_deg = rad2deg(rotation_angle); %#ok<NASGU>
-    rotation_matrix =  [  cos(rotation_angle), -sin(rotation_angle);
-        sin(rotation_angle),  cos(rotation_angle)];
-    
-    rotatedKineData = nan(size(kineData,1),size(kineData,2));
-    
-    %Rotate the data so that the primary direction of motion is fore-aft
-    for k=1:nPts
-        c_point= [xCoordsIndex(k)  yCoordsIndex(k)];
-        c_vector = kineData(:,c_point)';
-        newVector = rotation_matrix*c_vector;
-        newVector = newVector';
-        rotatedKineData(:,c_point) = newVector;
-    end
-    
-    if  deltaXtravelled <0
-        rotatedKineData(:,yPts) = rotatedKineData(:,yPts).*-1;
-    end
-    
-    %Read just origin vertical minimum
-    yMin = min(min(rotatedKineData(:,yCoordsIndex)));
-    rotatedKineData(:,yCoordsIndex) = rotatedKineData(:,yCoordsIndex) - repmat(yMin,length(rotatedKineData(:,yCoordsIndex)),nPts);
-    
+    % Rotate the data to be in the body frame of reference, with forward
+    % motion in the positive X direction
+           
+    [rotatedKineData] = RotateDataToBodyFrame(kineData,xBodyIndex,yBodyIndex,time);
+       
     %Plot the original and rotated data for 'reality check'
     f1=figure;
     plot(kineData(:,xCoordsIndex), kineData(:,yCoordsIndex),'r');
@@ -193,10 +178,9 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     xlabel('x-coordinates')
     ylabel('y-coordinates')
     title([filePrefix ': Rotated kinematic data: red= raw, blue, rotated'])
-    [~] = SaveFigAsPDF(f1,kPathname,filePrefix,'_RotatedData');
+    [~] = SaveFigAsPDF(f1,savePathN,filePrefix,'_RotatedData');
     close(f1);
     
-    % spline smooth data - output smData - plot smoothed data
     % Run with sptol set to zero to get raw velocity of each column (body XY, leg XY) (rawVel)
     [~,rawVel] = SplineInterp_wSPAPS(rotatedKineData, time, 0, 1);
     
@@ -204,16 +188,10 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     rawTotVel = sqrt(rawVel(:,xCoordsIndex).^2 + rawVel(:,yCoordsIndex).^2);
     
     % Run with sptol to get smoothed velocities (smVel)
-    % Filtering section:  Spline filter data in a loop with user feedback
-    % Set default tolerance
     vel_sptol = 0.001; % sptol for smoothing velocities
-    SSans=inputdlg('Filter settings (velocities)','Input spline tolerance',1,{num2str(vel_sptol)});
-    vel_sptol=str2num(SSans{1,1});
-    
-    %Create a 'while' loop, allow user to adjust spline tolerances
-    filtGood = 'N';
-    while filtGood == 'N'
-        
+%     SSans=inputdlg('Filter settings (velocities)','Input spline tolerance',1,{num2str(vel_sptol)});
+%     vel_sptol=str2num(SSans{1,1});
+            
         [~,smVel] = SplineInterp_wSPAPS(rotatedKineData, time, vel_sptol, 1);
         
         % calculate smoothed resultant velocity (smTotVel) from smoothed XY velocities (smVel)
@@ -227,19 +205,9 @@ if ~exist([kPathname filePrefix '.mat'],'file')
         xlabel('Time (s)')
         ylabel('Foot velocity (mm/s)')
         title([filePrefix ': Kinematic data: red = raw, blue = filtered | sptol = ' num2str(vel_sptol) ' CLOSE'])
-        [~] = SaveFigAsPDF(f2,kPathname,filePrefix,'_FiltVelocities');
+        [~] = SaveFigAsPDF(f2,savePathN,filePrefix,'_FiltVelocities');
         waitfor(f2);
-        
-        filtans = inputdlg('Is this filter good? (Y/N)','Filter Status',1,{'N'});
-        filtGood=filtans{1,1};
-        
-        if filtGood == 'N'
-            SSans=inputdlg('Adjust Filter','Input new vel spline tolerance',1,{num2str(vel_sptol)});
-            vel_sptol=str2num(SSans{1,1});
-        end
-        
-    end %end while filtering loop for user adjustment of filter settings
-    
+                
     % detect foot contacts by velocity thresholds
     smLegTotVel = smTotVel(:,(yLegsIndex/2));
     
@@ -255,12 +223,9 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     % legVel_InContact = nan(size(smLegTotVel,1),length(leg_labels));
     
     t_velThreshNum = 0.5; % default velocity threshold number
-    SSans=inputdlg('Velocity threshold settings','Input velThreshNum',1,{num2str(t_velThreshNum)});
-    t_velThreshNum=str2num(SSans{1,1});
+%     SSans=inputdlg('Velocity threshold settings','Input velThreshNum',1,{num2str(t_velThreshNum)});
+%     t_velThreshNum=str2num(SSans{1,1});
     
-    %Create a 'while' loop, allow user to adjust velocity threshold
-    threshGood = 'N';
-    while threshGood == 'N'
         legContacts = zeros(size(smLegTotVel,1),length(leg_labels));
         legVel_InContact = nan(size(smLegTotVel,1),length(leg_labels));
         velThreshold = mean_legVel - t_velThreshNum.*(std_legVel);
@@ -294,7 +259,7 @@ if ~exist([kPathname filePrefix '.mat'],'file')
         subplot(4,1,1)
         hold on;
         title([filePrefix ': Detected stance phases, using velocity threshold = ' num2str(t_velThreshNum)])
-        [~] = SaveFigAsPDF(f3,kPathname,filePrefix,'_VelocityDetection');
+        [~] = SaveFigAsPDF(f3,savePathN,filePrefix,'_VelocityDetection');
         
         %create gait diagram vectors
         gaitDiagramData = legContacts.* repmat([8 6 4 2 7 5 3 1],length(legContacts),1);
@@ -314,18 +279,7 @@ if ~exist([kPathname filePrefix '.mat'],'file')
         title( [filePrefix ': Initial Gait diagram: Foot velocity only.'])
         set(gca,'YTick',[1 2 3 4 5 6 7 8])
         set(gca,'YTickLabel',leg_labels_anat)
-        [~] = SaveFigAsPDF(f4,kPathname,filePrefix,'_GaitDiagram1');
-        
-        threshans = inputdlg('Is this number good? (Y/N)','VelThresh Status',1,{'N'});
-        threshGood=threshans{1,1};
-        
-        if threshGood == 'N'
-            SSans=inputdlg('Adjust VelThreshNum','Input new number',1,{num2str(t_velThreshNum)});
-            t_velThreshNum=str2num(SSans{1,1});
-        end
-        
-        
-    end %end while loop
+        [~] = SaveFigAsPDF(f4,savePathN,filePrefix,'_GaitDiagram1');       
     
     % delete 'over' smoothed data for stance detection.
     clear smKineData
@@ -347,7 +301,7 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     xlabel('X-coords')
     ylabel('Y-coords')
     title([filePrefix ': Kinematic data: red = raw, blue = filtered | sptol = ' num2str(kin_sptol)])
-    [~] = SaveFigAsPDF(f5,kPathname,filePrefix,'_FiltKineData');
+    [~] = SaveFigAsPDF(f5,savePathN,filePrefix,'_FiltKineData');
     %close(f5);
     
     % % pull out body data for subtracting angles from COM
@@ -397,7 +351,7 @@ if ~exist([kPathname filePrefix '.mat'],'file')
 
     %Save filtered data in  Mat file
     close all; %Close figures to avoid saving them in the mat file
-    save([kPathname filePrefix])
+    save([savePathN filePrefix])
     
 else    %If data had previously been filtered and saved (.mat file exists)
     kCurrentPath = kPathname; %Ensure that current path is not overwritten
@@ -424,7 +378,7 @@ xlabel('Time (s)');
 subplot(4,1,1)
 hold on;
 title([filePrefix ': Foot x displacement (rel to COM)']);
-[~] = SaveFigAsPDF(flx,kPathname,filePrefix,'_Foot_XDisp');
+[~] = SaveFigAsPDF(flx,savePathN,filePrefix,'_Foot_XDisp');
 %close(flx);
 
 % plot foot x y displacements for sanity check
@@ -445,49 +399,9 @@ xlabel('Time (s)');
 subplot(4,1,1)
 hold on;
 title([filePrefix ': Foot y displacement (rel to COM)']);
-[~] = SaveFigAsPDF(flx,kPathname,filePrefix,'_Foot_YDisp');
+[~] = SaveFigAsPDF(flx,savePathN,filePrefix,'_Foot_YDisp');
 %close(flx);
 
-% % plot leg lengths and angles for sanity check
-% f6 = figure();
-% for i=1:4
-%     subplot(4,1,i)
-%     hold on;
-%     col_i = SpidColors(i,:);
-%     col_i2 = SpidColors(i+4,:);
-%     plot(time,legLengthsMeanSub(:,i),'Color',col_i);
-%     plot(time,legLengthsMeanSub(:,i+4),'Color',col_i2);
-%     legend(['L ' num2str(i)],['R ' num2str(i)])
-%     if i == 2
-%         ylabel('Leg length (mm)')
-%     end
-% end
-% xlabel('Time (s)');
-% subplot(4,1,1)
-% hold on;
-% title([filePrefix ': Leg Lengths (rel to COM motion & foot centroid)']);
-% [~] = SaveFigAsPDF(f6,kPathname,filePrefix,'_LegLengths');
-% close(f6);
-
-% f7 = figure();
-% for i = 1:4
-%     subplot(4,1,i)
-%     hold on;
-%     col_i = SpidColors(i,:);
-%     col_i2 = SpidColors(i+4,:);
-%     plot(time,legAnglesMeanSub(:,i),'Color',col_i);
-%     plot(time,legAnglesMeanSub(:,i+4),'Color',col_i2);
-%     legend(['L ' num2str(i)],['R ' num2str(i)])
-%     if i == 2
-%         ylabel('Leg Angle (deg)')
-%     end
-% end
-% xlabel('Time (s)')
-% subplot(4,1,1)
-% hold on;
-% title([filePrefix ': Leg Angles (rel to COM motion & foot centroid)'])
-% [~] = SaveFigAsPDF(f7,kPathname,filePrefix,'_LegAngles');
-% close(f7);
 
 %Plot 'overhead' view plot in cartesian coordinates
 % Replaces previous polar plot
@@ -495,7 +409,7 @@ f10=(figure); %#ok<NASGU>
 plot(legDataRelToCOM(:,filtXLegCols),legDataRelToCOM(:,filtYLegCols));
 legend(leg_labels,'Location', 'eastoutside');
 title([filePrefix ': Foot trajectory (rel to COM)']);
-print([kPathname,filePrefix,'_FootTrajectoryPlot'],'-dpdf');
+print([savePathN,filePrefix,'_FootTrajectoryPlot'],'-dpdf');
 %close(f10);
 
 % calculate Hilbert phases (normal and inverted)
@@ -525,12 +439,12 @@ refPhase = NaN(size(hilbert_phase,1),8);
 
 % set up for hilbert event detection while loop for user input
 hilEventDet_thresh = 0.06; % default threshold for detecting events from Hilbert
-SSans=inputdlg('HilbertEvent threshold settings','Input hilEventDet_thresh',1,{num2str(hilEventDet_thresh)});
-hilEventDet_thresh=str2num(SSans{1,1});
-
-%Create a 'while' loop, allow user to adjust hilbert threshold
-threshGood = 'N';
-while threshGood == 'N'
+% SSans=inputdlg('HilbertEvent threshold settings','Input hilEventDet_thresh',1,{num2str(hilEventDet_thresh)});
+% hilEventDet_thresh=str2num(SSans{1,1});
+% 
+% %Create a 'while' loop, allow user to adjust hilbert threshold
+% threshGood = 'N';
+% while threshGood == 'N'
     %Need to recreate these variables in each iteration of while loop
     %To ensure they are recalculated correctly if the hilbert threshold is adjusted
     newGaitDiagram = nan(size(legContacts));
@@ -594,11 +508,6 @@ while threshGood == 'N'
                 curStanceIndex = [cFD:1:min([cFO length(newGaitDiagram)])];
                 newGaitDiagram(curStanceIndex,i) = 1;%.*i;
             end
-            
-%             if i == 8
-%                 disp(fO_Events)
-%                 disp(fD_Events)
-%             end
             
             % calculate leg angle excursions - needs editing to avoid
             % duplicate/extra events, talk to MD
@@ -695,35 +604,8 @@ while threshGood == 'N'
     subplot(4,1,1)
     hold on;
     title([filePrefix ': Reference phases (with foot off/down events) | HilbertEvent threshold = ' num2str(hilEventDet_thresh) ' CLOSE'])
-    [~] = SaveFigAsPDF(f14,kPathname,filePrefix,'_refPhase');
+    [~] = SaveFigAsPDF(f14,savePathN,filePrefix,'_refPhase');
     waitfor(f14);
-    
-%     %plot hilbert phases
-%     f11 = figure;
-%     for i = 1:4
-%         subplot(4,1,i)
-%         hold on;
-%         col_i = SpidColors(i,:);
-%         col_i2 = SpidColors(i+4,:);
-%         plot(time,hilbert_phase(:,i),'Color',col_i);
-%         plot(time,hilbert_phase(:,i+4),'Color',col_i2);
-%         plot(time(footOff_H1{i}), hilbert_phase(footOff_H1{i},i),'kX');
-%         plot(time(footOff_H1{i+4}), hilbert_phase(footOff_H1{i+4},i+4),'kX');
-%         plot(time,hilbert_phase_inverted(:,i),'--','Color',col_i);
-%         plot(time,hilbert_phase_inverted(:,i+4),'--','Color',col_i2);
-%         plot(time(footDown_H2{i}), hilbert_phase_inverted(footDown_H2{i},i),'kX');
-%         plot(time(footDown_H2{i+4}), hilbert_phase_inverted(footDown_H2{i+4},i+4),'kX');
-%         legend(['H1 L ' num2str(i)],['H1 R ' num2str(i)],'ED', 'ED',['H2 L ' num2str(i)], ['H2 R ' num2str(i)],'ED','ED');
-%         if i == 2
-%             ylabel('Hilbert phase')
-%         end
-%     end
-%     xlabel('Time (s)')
-%     subplot(4,1,1)
-%     hold on;
-%     title([filePrefix ': Hilbert phase of leg angles'])
-%     [~] = SaveFigAsPDF(f11,kPathname,filePrefix,'_HilbertPhase');
-%     close(f11);
     
     %Plot the new gait diagram
     newGaitDiagramData = newGaitDiagram.* repmat([8 6 4 2 7 5 3 1],length(newGaitDiagram),1);
@@ -740,17 +622,17 @@ while threshGood == 'N'
     set(gca,'YTick',[1 2 3 4 5 6 7 8])
     set(gca,'YTickLabel',leg_labels_anat)
     title([filePrefix ': New Gait diagram: foot velocity and leg angle detection'] )
-    [~] = SaveFigAsPDF(f12,kPathname,filePrefix,'_GaitDiagram_Combined');
+    [~] = SaveFigAsPDF(f12,savePathN,filePrefix,'_GaitDiagram_Combined');
     
-    threshans = inputdlg('Hilbert thresh OK? (Y/N)','hilEventDet_thresh Status',1,{'N'});
-    threshGood=threshans{1,1};
-    
-    if threshGood == 'N'
-        SSans=inputdlg('Adjust hilEventDet_thresh','Input new number',1,{num2str(hilEventDet_thresh)});
-        hilEventDet_thresh=str2num(SSans{1,1}); %#ok<*ST2NM>
-    end
-    
-end %end while loop
+%     threshans = inputdlg('Hilbert thresh OK? (Y/N)','hilEventDet_thresh Status',1,{'N'});
+%     threshGood=threshans{1,1};
+%     
+%     if threshGood == 'N'
+%         SSans=inputdlg('Adjust hilEventDet_thresh','Input new number',1,{num2str(hilEventDet_thresh)});
+%         hilEventDet_thresh=str2num(SSans{1,1}); %#ok<*ST2NM>
+%     end
+%     
+% end %end while loop
 
 % SAVE OUT STRIDE PARAMETERS AS CSV - LEGS/STRIDES
 
@@ -804,7 +686,7 @@ c_saveCell = horzcat(c_ls_saveCell1,c_ls_saveCell2);
 ls_compiledCellArray = vertcat(ls_compiledCellArray,c_saveCell);
 
 %Save the cell array to a file:
-cell2csv([kPathname,filePrefix, '_Data_Legs_Strides.csv' ], ls_compiledCellArray)
+cell2csv([savePathN,filePrefix, '_Data_Legs_Strides.csv' ], ls_compiledCellArray)
 
 % Calculate relative leg phases
 
@@ -820,14 +702,15 @@ meanBodyPt(:,1) = mean(filtRotKineData(:,xBodyIndex),2);
 meanBodyPt(:,2) = mean(filtRotKineData(:,yBodyIndex),2);
 
 [~,bodyVelXY] = SplineInterp_wSPAPS(meanBodyPt, time, kin_sptol, 1);
+bodyVelMag = sqrt(bodyVelXY(:,1).^2 + bodyVelXY(:,2).^2);
+bodyVelAng = unwrap(atan2d(bodyVelXY(:,2),bodyVelXY(:,1)));
 
 %atan2d(Y,X)
 bodyOrientation_deltaX = filtRotKineData(:,xBodyIndex(end)) - filtRotKineData(:,xBodyIndex(1));
 bodyOrientation_deltaY = filtRotKineData(:,yBodyIndex(end)) - filtRotKineData(:,yBodyIndex(1));
+
 bodyYawAngle = unwrap(atan2d(bodyOrientation_deltaY,bodyOrientation_deltaX));
 bodyYawAngle = bodyYawAngle - mean(bodyYawAngle);
-bodyVelMag = sqrt(bodyVelXY(:,1).^2 + bodyVelXY(:,2).^2);
-bodyVelAng = unwrap(atan2d(bodyVelXY(:,2),bodyVelXY(:,1)));
 
 fbd = figure; 
 hold on;
@@ -844,7 +727,7 @@ xlabel('Time (s)')
 subplot(3,1,1)
  hold on;
 title([filePrefix ': Body Trajectory Diagram'] )
-[~] = SaveFigAsPDF(fbd,kPathname,filePrefix,'_BodyTrajectory');
+[~] = SaveFigAsPDF(fbd,savePathN,filePrefix,'_BodyTrajectory');
 
 RefLegFootOffIndex =  combinedEvents{refLeg}(combinedEvents{refLeg}(:,2)==-1,1);
 
@@ -853,13 +736,28 @@ strideVelocity = nan(length(RefLegFootOffIndex),1);
 strideLength(2:end) = sqrt((diff(meanBodyPt(RefLegFootOffIndex,1)).^2 + diff(meanBodyPt(RefLegFootOffIndex,2)).^2));%in mm
 strideVelocity(2:end) = strideLength(2:end)./(diff(RefLegFootOffIndex)./framerate); %mm per second
 
+refLegDutyFactor = nan(length(RefLegFootOffIndex),1);
+if length(dutyFactor{refLeg})~= length(RefLegFootOffIndex)
+    refLegDutyFactor(2:end) = dutyFactor{refLeg};
+else
+refLegDutyFactor(1:end) = dutyFactor{refLeg};
+end
+
+refstanceSlipFactor = nan(length(RefLegFootOffIndex),1);
+
+if length(stanceSlipFactor{refLeg})~= length(RefLegFootOffIndex)
+refstanceSlipFactor(2:end) = stanceSlipFactor{refLeg};
+else
+refstanceSlipFactor(1:end) = stanceSlipFactor{refLeg};
+end
+
 RefLegFootOffTimes = RefLegFootOffIndex./framerate;
 
-body_phase_SaveMatrix = [[1:length(RefLegFootOffTimes)]' RefLegFootOffTimes bodyVelMag(RefLegFootOffIndex) bodyVelAng(RefLegFootOffIndex) bodyYawAngle(RefLegFootOffIndex) strideLength strideVelocity legPhaseDiffs(RefLegFootOffIndex,:)];
-body_phase_Headers = {'fileName', 'strideNumber','RefLegFootOffTimes','bodyVelMag','bodyVelAng','bodyYawAngle','strideLength','strideVelocity','legPhaseDiff1','legPhaseDiff2', 'legPhaseDiff3','legPhaseDiff4','legPhaseDiff5','legPhaseDiff6','legPhaseDiff7','legPhaseDiff8'};
+body_phase_SaveMatrix = [[1:length(RefLegFootOffTimes)]' RefLegFootOffTimes bodyVelMag(RefLegFootOffIndex) bodyVelAng(RefLegFootOffIndex) bodyYawAngle(RefLegFootOffIndex) strideLength strideVelocity refLegDutyFactor refstanceSlipFactor legPhaseDiffs(RefLegFootOffIndex,:)];
+body_phase_Headers = {'fileName', 'strideNumber','RefLegFootOffTimes','bodyVelMag','bodyVelAng','bodyYawAngle','strideLength','strideVelocity', 'dutyFactor', 'stanceSlipFactor', 'legPhaseDiff1','legPhaseDiff2', 'legPhaseDiff3','legPhaseDiff4','legPhaseDiff5','legPhaseDiff6','legPhaseDiff7','legPhaseDiff8'};
 
 %Put together the numeric data with text data containing headers, filename
-bp_compiledCellArray = cell(1,16);
+bp_compiledCellArray = cell(1,18);
 %Create temporary cell for to hold column with fileName
 c_bp_saveCell1 = cell(size(body_phase_SaveMatrix,1), 1);
 [c_bp_saveCell1{:,1}] = deal(filePrefix);
@@ -873,7 +771,7 @@ c_bp_saveCell = horzcat(c_bp_saveCell1,c_bp_saveCell2);
 bp_compiledCellArray = vertcat(bp_compiledCellArray,c_bp_saveCell);
 
 %Save the cell array to a file:
-cell2csv([kPathname,filePrefix, '_Data_Body_Phase.csv' ], bp_compiledCellArray)
+cell2csv([savePathN,filePrefix, '_Data_Body_Phase.csv' ], bp_compiledCellArray)
 
 out_LS_compiledArray = ls_compiledCellArray(2:end,:);
 out_bp_compiledArray = bp_compiledCellArray(2:end,:);
@@ -888,13 +786,90 @@ out_bp_compiledArray = bp_compiledCellArray(2:end,:);
 % ylabel('COM velocity (mm/s)')
 % legend ('Velocity','RefLegFootOffIndex')
 % title([filePrefix ': COM Velocity'] )
-% [~] = SaveFigAsPDF(f14,kPathname,filePrefix,'_BodyVelMag_RefLegFOInd');
+% [~] = SaveFigAsPDF(f14,savePathN,filePrefix,'_BodyVelMag_RefLegFOInd');
 % close(f14);
 
 end
 
 
-function [legData, xNewLegs, yNewLegs] = PullOutLegCoords (kineData,xLegsIndex,yLegsIndex)
+function[rotatedKineData] = RotateDataToBodyFrame(kineData,xBodyIndex,yBodyIndex,time)
+    
+nCols = size(kineData,2);
+nPts = fix(nCols./2);
+xCoordsIndex = [1:2:size(kineData,2)]; % all X coords
+yCoordsIndex = [2:2:size(kineData,2)]; % all Y coords
+
+    startIdx = find(sum(isnan(kineData),2) == 0, 1,'first' );
+    endIdx = find(sum(isnan(kineData),2) == 0, 1,'last' );
+    originPt = kineData(startIdx,1:2); %XY coords of bodyCOM
+    kineData = kineData - repmat(originPt,size(kineData,1),nPts);
+    
+    % Calculate the net direction of motion and a rotation matrix
+    deltaXtravelled = mean(kineData(endIdx,xBodyIndex)- kineData(startIdx,xBodyIndex));
+    deltaYtravelled = mean(kineData(endIdx,yBodyIndex)- kineData(startIdx,yBodyIndex));
+    rotation_angle = (atan2(deltaYtravelled,deltaXtravelled)).*-1;
+    
+    rotation_angle_deg = rad2deg(rotation_angle); %#ok<NASGU>
+    rotation_matrix =  [  cos(rotation_angle), -sin(rotation_angle);
+        sin(rotation_angle),  cos(rotation_angle)];
+    
+    rotatedKineData = nan(size(kineData,1),size(kineData,2));
+    
+    %Rotate the data so that the primary direction of motion is fore-aft
+    for k=1:nPts
+        c_point= [xCoordsIndex(k)  yCoordsIndex(k)];
+        c_vector = kineData(:,c_point)';
+        newVector = rotation_matrix*c_vector;
+        newVector = newVector';
+        rotatedKineData(:,c_point) = newVector;
+    end
+    
+    if  deltaXtravelled <0
+        rotatedKineData(:,yPts) = rotatedKineData(:,yPts).*-1;
+    end
+    
+    %Read just origin vertical minimum
+    yMin = min(min(rotatedKineData(:,yCoordsIndex)));
+    rotatedKineData(:,yCoordsIndex) = rotatedKineData(:,yCoordsIndex) - repmat(yMin,length(rotatedKineData(:,yCoordsIndex)),nPts);
+
+% %Now do a 2nd correction based on shorter term direction of motion
+% Note initial try of this looked crazy-  will have to do a moving
+% average of the data to rotate over time scales of approximately 1 stride
+% not the instantaneous changes in direction
+
+% [smKineData] = SplineInterp_wSPAPS(kineData, time, 0.001, 1);
+%     startIdx = find(sum(isnan(smKineData),2) == 0, 1,'first' );   
+%     originPt = smKineData(startIdx,xBodyIndex(1):yBodyIndex(1)); %XY coords of bodyCOM
+%     smKineData = smKineData - repmat(originPt,size(smKineData,1),nPts);
+%     
+%     % Calculate the rotation matrix
+%         newRotatedKineData = nan(size(smKineData,1),size(smKineData,2));
+%         newRotatedKineData(1,:) = rotatedKineData(1,:);
+%         
+%     for r_i = 2:size(smKineData,1)
+%         
+%         c_deltaX = mean(smKineData(r_i,xBodyIndex)- kineData(r_i -1,xBodyIndex));
+%         c_deltaY = mean(smKineData(r_i,yBodyIndex)- kineData(r_i -1,yBodyIndex));
+%         c_rotation_angle = (atan2(c_deltaY,c_deltaX)).*-1;
+%         
+%     rotation_matrix =  [  cos(c_rotation_angle), -sin(c_rotation_angle);
+%         sin(c_rotation_angle),  cos(c_rotation_angle)];
+%     %Rotate the data so that the body's direction of motion the x-axis
+%     for k=1:nPts
+%         c_point= [xCoordsIndex(k)  yCoordsIndex(k)];
+%         c_vector = kineData(r_i,c_point)';
+%         newVector = rotation_matrix*c_vector;
+%         newVector = newVector';
+%         newRotatedKineData(r_i,c_point) = newVector;
+%     end
+%     end
+%     %Re-adjust origin vertical minimum
+%     yMin = min(min(newRotatedKineData(:,yCoordsIndex)));
+%     newRotatedKineData(:,yCoordsIndex) = newRotatedKineData(:,yCoordsIndex) - repmat(yMin,length(newRotatedKineData(:,yCoordsIndex)),nPts);
+          
+end
+
+function [legData, xNewLegs, yNewLegs] = PullOutLegCoords(kineData,xLegsIndex,yLegsIndex)
 % PullOutLegCoords takes leg coordinates from imported CSV data from
 % ProAnalyst, and puts it in a matrix.
 
