@@ -754,7 +754,7 @@ end
 RefLegFootOffTimes = RefLegFootOffIndex./framerate;
 
 body_phase_SaveMatrix = [[1:length(RefLegFootOffTimes)]' RefLegFootOffTimes bodyVelMag(RefLegFootOffIndex) bodyVelAng(RefLegFootOffIndex) bodyYawAngle(RefLegFootOffIndex) strideLength strideVelocity refLegDutyFactor refstanceSlipFactor legPhaseDiffs(RefLegFootOffIndex,:)];
-body_phase_Headers = {'fileName', 'strideNumber','RefLegFootOffTimes','bodyVelMag','bodyVelAng','bodyYawAngle','strideLength','strideVelocity', 'dutyFactor', 'stanceSlipFactor', 'legPhaseDiff1','legPhaseDiff2', 'legPhaseDiff3','legPhaseDiff4','legPhaseDiff5','legPhaseDiff6','legPhaseDiff7','legPhaseDiff8'};
+body_phase_Headers = {'fileName', 'strideNumber','RefLegFootOffTimes','bodyVelMag','bodyVelAng','bodyYawAngle','strideLength','strideVelocity', 'dutyFactor', 'stanceSlipFactor', 'legPhaseDiffL1','legPhaseDiffL2', 'legPhaseDiffL3','legPhaseDiffL4','legPhaseDiffR1','legPhaseDiffR2','legPhaseDiffR3','legPhaseDiffR4'};
 
 %Put together the numeric data with text data containing headers, filename
 bp_compiledCellArray = cell(1,18);
