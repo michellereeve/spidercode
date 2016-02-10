@@ -52,6 +52,30 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     % 13-14 = L3 X,Y ... so from #9, odd numbers are X, even numbers are Y
     % ends at 24 (R4 Y)
     
+    % Columns (for R4ablation data):
+    % 1 = frame number
+    % 2 = time (sec)
+    % 3-4 = bodyCOM X,Y
+    % 5-6 = bodyBack X,Y
+    % 7-8 = bodyFront X,Y
+    % 9-10 = L1 X,Y
+    % 11-12 = L2 X,Y
+    % 13-14 = L3 X,Y ... so from #9, odd numbers are X, even numbers are Y
+    % ends at 22 (R3 Y)
+    
+    % Columns (for L3ablation R4missing data):
+    % 1 = frame number
+    % 2 = time (sec)
+    % 3-4 = bodyCOM X,Y
+    % 5-6 = bodyBack X,Y
+    % 7-8 = bodyFront X,Y
+    % 9-10 = L1 X,Y
+    % 11-12 = L2 X,Y
+    % 13-14 = L4 X,Y
+    % 15-16 = R1 X,Y
+    % 17-18 = R2 X,Y
+    % 19-20 = R3 X,Y
+
     % Columns (for intact data, with eggsac):
     % 1 Frame
     % 2  Time
@@ -134,26 +158,45 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     
     %Specify column indices for body and legs
     %This section below will need to be updated to distinguish 
-    % 'intact' and 'ablation' trials
+    % 'intact' and 'ablation' trials -- SAME CODE FOR ABLATION TRIALS FOR
+    % ASSIGNING COLUMNS BECAUSE WE USE SIZE(KINEDATA) AS THE ENDPOINT.
+    % ADDED EXTRA VARIABLE FOR NUMLEGS TO USE IN FOR LOOPS.
     
     if strcmp(kFilename(1:2),'03')==1 || strcmp(kFilename(1:2),'04')==1
-        %Wolf Spider trials with no egg sac
+        %Wolf Spider trials with no egg sac,
         xLegsIndex = [7:2:size(kineData,2)];
         yLegsIndex = [8:2:size(kineData,2)];
         xBodyIndex = [1:2:5];
         yBodyIndex = [2:2:6];
+        numLegs = 8; % number of legs
     elseif strcmp(kFilename(1:2),'01')==1 || strcmp(kFilename(1:2),'02')==1
-        % Wold spider trials with egg sac
+        % Wolf spider trials with egg sac
         xLegsIndex = [9:2:size(kineData,2)];
         yLegsIndex = [10:2:size(kineData,2)];
         xBodyIndex = [1:2:7]; %Additional body point for egg sac
         yBodyIndex = [2:2:8];
-    else
-        %Intact trials for orb weaver data set
+        numLegs = 8;
+    elseif strcmp(kFilename(1:3),'002')==1 || strcmp(kFilename(1:2),'07')==1 || strcmp(kFilename(1:2),'08')==1
+        % R4ablation trials - same leg columns, diff no of legs
         xLegsIndex = [7:2:size(kineData,2)];
         yLegsIndex = [8:2:size(kineData,2)];
         xBodyIndex = [1:2:5];
         yBodyIndex = [2:2:6];
+        numLegs = 7;
+    elseif strcmp(kFilename(1:3),'003')==1 || strcmp(kFilename(1:2),'09')==1 || strcmp(kFilename(1:2),'10')==1
+        % L3ablation trials - same leg columns, diff no of legs
+        xLegsIndex = [7:2:size(kineData,2)];
+        yLegsIndex = [8:2:size(kineData,2)];
+        xBodyIndex = [1:2:5];
+        yBodyIndex = [2:2:6];
+        numLegs = 6;
+    else
+        %Intact trials (OrbW/Wolf) - '001' '05' '06'
+        xLegsIndex = [7:2:size(kineData,2)];
+        yLegsIndex = [8:2:size(kineData,2)];
+        xBodyIndex = [1:2:5];
+        yBodyIndex = [2:2:6];
+        numLegs = 8;
     end
     
     xCoordsIndex = [1:2:size(kineData,2)]; % all X coords
