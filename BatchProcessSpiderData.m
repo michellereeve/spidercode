@@ -25,8 +25,8 @@ for f = 1:length(fileNamesArray)
     
 c_fileName = fileNamesArray{f};
 
-[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Chloe(c_fileName,pathName);
-%[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Orb2(c_fileName,pathName);
+%[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Chloe(c_fileName,pathName);
+[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Orb2(c_fileName,pathName);
 close all;
 
 if f == 1
