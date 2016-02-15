@@ -18,15 +18,14 @@ dirStructure = dir([pathName '*.csv']);
 mkdir([pathName '_Results' sep]);
 saveDir = dirCheck([pathName '_Results' sep ]);
 
-strides_CompiledCellArray = cell(1,12);
-bodyPhase_CompiledCellArray = cell(1,18);
+strides_CompiledCellArray = cell(1,18);
+bodyPhase_CompiledCellArray = cell(1,20);
 
 for f = 1:length(fileNamesArray)
     
 c_fileName = fileNamesArray{f};
 
-%[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Chloe(c_fileName,pathName);
-[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData_Orb2(c_fileName,pathName);
+[bp_compiledCellArray,body_phase_Headers, ls_compiledCellArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData(c_fileName,pathName);
 close all;
 
 if f == 1
