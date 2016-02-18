@@ -71,21 +71,21 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     
     clear tempData;
  
+    % Rotate the data to be in the body frame of reference, with forward
+    % motion in the positive X direction       
+    [rotatedKineData] = RotateDataToBodyFrame(kineData);
+    
     %Get leg and body column IDs depending on file type case
     %Also adds NaN (empty) 'placeholder' columns for the 
     %Trials with leg ablations, so the gait diagrams are consistently
     %Based on the 'original' leg configuration
     
-    [xLegsIndex,yLegsIndex,xBodyIndex,yBodyIndex,kineData] = GetColumnIndicesBasedOnFileName(kineData,kFilename);
+    [xLegsIndex,yLegsIndex,xBodyIndex,yBodyIndex,kineData,rotatedKineData] = GetColumnIndicesBasedOnFileName(kineData,rotatedKineData,kFilename);
     
-    xCoordsIndex = [1:2:size(kineData,2)]; % all X coords
-    yCoordsIndex = [2:2:size(kineData,2)]; % all Y coords
+    xCoordsIndex = [1:2:size(rotatedKineData,2)]; % all X coords
+    yCoordsIndex = [2:2:size(rotatedKineData,2)]; % all Y coords
     
-    
-    % Rotate the data to be in the body frame of reference, with forward
-    % motion in the positive X direction       
-    [rotatedKineData] = RotateDataToBodyFrame(kineData,xBodyIndex,yBodyIndex);
-       
+      
     %Plot the original and rotated data for 'reality check'
     f1=figure;
     plot(kineData(:,xCoordsIndex), kineData(:,yCoordsIndex),'r');
@@ -658,7 +658,7 @@ c_saveCell = horzcat(c_ls_saveCell1,c_ls_saveCell2);
 ls_compiledCellArray = vertcat(ls_compiledCellArray,c_saveCell);
 
 %Save the cell array to a file:
-cell2csv([savePathN,filePrefix, '_Data_Legs_Strides.csv' ], ls_compiledCellArray)
+cell2csv([savePathN,filePrefix, '_Data_Legs_Strides.csv' ], ls_compiledCellArray);
 
 % Calculate relative leg phases
 unWr_refPhase = unwrap(refPhase);
@@ -722,7 +722,7 @@ c_bp_saveCell = horzcat(c_bp_saveCell1,c_bp_saveCell2);
 bp_compiledCellArray = vertcat(bp_compiledCellArray,c_bp_saveCell);
 
 %Save the cell array to a file:
-cell2csv([savePathN,filePrefix, '_Data_Body_Phase.csv' ], bp_compiledCellArray)
+cell2csv([savePathN,filePrefix, '_Data_Body_Phase.csv' ], bp_compiledCellArray);
 
 %Export just the data portion of the array, as it will be compiled
 %With the filename in the batch processing script
@@ -735,12 +735,15 @@ close all;
 end
 
 
-function[rotatedKineData] = RotateDataToBodyFrame(kineData,xBodyIndex,yBodyIndex)
+function[rotatedKineData] = RotateDataToBodyFrame(kineData)
     
 nCols = size(kineData,2);
 nPts = fix(nCols./2);
 xCoordsIndex = [1:2:size(kineData,2)]; % all X coords
 yCoordsIndex = [2:2:size(kineData,2)]; % all Y coords
+% the below might need adjusting for eggsac trials? Add if statement?
+xBodyIndex = [1:2:5]; % X coords for COM, Back, Front
+yBodyIndex = [2:2:6];% Y coords for COM, Back, Front
 
     startIdx = find(sum(isnan(kineData),2) == 0, 1,'first' );
     endIdx = find(sum(isnan(kineData),2) == 0, 1,'last' );
@@ -966,7 +969,7 @@ newEventsSorted(end,2) = newEventsSorted(end-1,2).*-1;
 combinedEvents = newEventsSorted;
 end
 
-function [xLegsIndex,yLegsIndex,xBodyIndex,yBodyIndex,kineData] = GetColumnIndicesBasedOnFileName(kineData,kFilename)
+function [xLegsIndex,yLegsIndex,xBodyIndex,yBodyIndex,kineData,rotatedKineData] = GetColumnIndicesBasedOnFileName(kineData,rotatedKineData,kFilename)
 %This function assigns column indices for body and legs based on the file type cases listed below
     % Columns (for intact data, without eggsac):
     % 1 = frame number
@@ -1023,15 +1026,15 @@ function [xLegsIndex,yLegsIndex,xBodyIndex,yBodyIndex,kineData] = GetColumnIndic
     %Specify column indices for body and legs    
     if strcmp(kFilename(1:2),'03')==1 || strcmp(kFilename(1:2),'04')==1
         %Wolf Spider trials with no egg sac,
-        xLegsIndex = [7:2:size(kineData,2)];
-        yLegsIndex = [8:2:size(kineData,2)];
+        xLegsIndex = [7:2:size(rotatedKineData,2)];
+        yLegsIndex = [8:2:size(rotatedKineData,2)];
         xBodyIndex = [1:2:5];
         yBodyIndex = [2:2:6];
  
     elseif strcmp(kFilename(1:2),'01')==1 || strcmp(kFilename(1:2),'02')==1
         % Wolf spider trials with egg sac
-        xLegsIndex = [9:2:size(kineData,2)];
-        yLegsIndex = [10:2:size(kineData,2)];
+        xLegsIndex = [9:2:size(rotatedKineData,2)];
+        yLegsIndex = [10:2:size(rotatedKineData,2)];
         xBodyIndex = [1:2:7]; %Additional body point for egg sac
         yBodyIndex = [2:2:8];
         
@@ -1039,36 +1042,49 @@ function [xLegsIndex,yLegsIndex,xBodyIndex,yBodyIndex,kineData] = GetColumnIndic
         %    leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
         % R4ablation trials - same leg columns, diff no of legs
         
+        % add NaNs to kineData too so datasets are the same size for
+        % plotting original & rotated data
         tempKineData = nan(size(kineData,1),size(kineData,2)+2);
+        tempRotatedKineData = nan(size(rotatedKineData,1),size(rotatedKineData,2)+2);
         %Leave column of NaNs at the appropriate place in the dataset for
         %ablated legs
-        tempKineData(:,1:size(kineData,2)) = kineData(:,1:size(kineData,2)); 
+        tempKineData(:,1:size(kineData,2)) = kineData(:,1:size(kineData,2));
+        tempRotatedKineData(:,1:size(rotatedKineData,2)) = rotatedKineData(:,1:size(rotatedKineData,2));
         kineData = tempKineData;
+        rotatedKineData = tempRotatedKineData;
         
-        xLegsIndex = [7:2:size(kineData,2)];
-        yLegsIndex = [8:2:size(kineData,2)];
+        xLegsIndex = [7:2:size(rotatedKineData,2)];
+        yLegsIndex = [8:2:size(rotatedKineData,2)];
         xBodyIndex = [1:2:5];
         yBodyIndex = [2:2:6];
                 
     elseif strcmp(kFilename(1:3),'003')==1 || strcmp(kFilename(1:2),'09')==1 || strcmp(kFilename(1:2),'10')==1
         % L3ablation trials - same leg columns, diff no of legs
          %    leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
-          %Leave column of NaNs at the appropriate place in the dataset for
-        %ablated legs
+         
+        %Leave column of NaNs at the appropriate place in the dataset for ablated legs
+        % add NaNs to kineData too so datasets are the same size for
+        % plotting original & rotated data
         tempKineData = nan(size(kineData,1),size(kineData,2)+4);
         tempKineData(:,1:10) = kineData(:,1:10); %body pts, L1, L2
         tempKineData(:,13:size(kineData,2)) = kineData(:,13:size(kineData,2)); %L4, to end        
         kineData = tempKineData;
         
-        xLegsIndex = [7:2:size(kineData,2)];
-        yLegsIndex = [8:2:size(kineData,2)];
+        tempRotatedKineData = nan(size(rotatedKineData,1),size(rotatedKineData,2)+4);
+        tempRotatedKineData(:,1:10) = rotatedKineData(:,1:10); %body pts, L1, L2
+        tempRotatedKineData(:,13:size(rotatedKineData,2)) = rotatedKineData(:,13:size(rotatedKineData,2)); %L4, to end        
+        rotatedKineData = tempRotatedKineData;
+        
+        
+        xLegsIndex = [7:2:size(rotatedKineData,2)];
+        yLegsIndex = [8:2:size(rotatedKineData,2)];
         xBodyIndex = [1:2:5];
         yBodyIndex = [2:2:6];
                         
     else
         %Intact trials (OrbW/Wolf) - '001' '05' '06'
-        xLegsIndex = [7:2:size(kineData,2)];
-        yLegsIndex = [8:2:size(kineData,2)];
+        xLegsIndex = [7:2:size(rotatedKineData,2)];
+        yLegsIndex = [8:2:size(rotatedKineData,2)];
         xBodyIndex = [1:2:5];
         yBodyIndex = [2:2:6];
     end
