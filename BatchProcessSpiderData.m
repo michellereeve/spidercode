@@ -18,8 +18,8 @@ dirStructure = dir([pathName '*.csv']);
 mkdir([pathName '_Results' sep]);
 saveDir = dirCheck([pathName '_Results' sep ]);
 
-strides_CompiledCellArray = cell(1,23);
-bodyPhase_CompiledCellArray = cell(1,23);
+strides_CompiledCellArray = cell(1,25);
+bodyPhase_CompiledCellArray = cell(1,25);
 
 for f = 1:length(fileNamesArray)
     

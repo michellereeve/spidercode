@@ -686,21 +686,23 @@ end
 %Filename is repeated in each row so that multiple files can be compiled into a single spreadsheet later.
 
 %Create output header row
-legs_strides_Header = {'fileName','species','Ind', 'Conditions', 'legNumber', 'strideNumber', 'strideAveVel','strideAveVelAng','strideAveYawAng',  ...
+legs_strides_Header = {'fileName','Species','SubjectNum', 'AblationCond','Terrain','EggsacCond', 'legNumber', 'strideNumber', 'strideAveVel','strideAveVelAng','strideAveYawAng',  ...
     'strideDeltaVel','strideDeltaVelAng','strideDeltaYawAng', 'stridePeriod', 'swingPeriod', ...
     'stancePeriod','dutyFactor','stance_x_Excur','swing_x_Excur','stance_y_Excur','swing_y_Excur','stanceSlipFactor','SegNum','R/L'};
 
 %Put together the numeric data with text data containing headers, filename
-ls_compiledCellArray = cell(1,length(legs_strides_tempMatrix)+4);
+ls_compiledCellArray = cell(1,length(legs_strides_tempMatrix)+6);
 %note this has one additional column for the filename information
 
 %Create temporary cell for to hold column with fileName and condition
 %string
-c_ls_saveCell1 = cell(size(legs_strides_SaveMatrix,1), 4);
+c_ls_saveCell1 = cell(size(legs_strides_SaveMatrix,1), 6);
 [c_ls_saveCell1{:,1}] = deal(filePrefix);
-[c_ls_saveCell1{:,2}] = deal(conditionStr{1});
-[c_ls_saveCell1{:,3}] = deal(conditionStr{2});
-[c_ls_saveCell1{:,4}] = deal(conditionStr{3});
+[c_ls_saveCell1{:,2}] = deal(conditionStr{1}); %species
+[c_ls_saveCell1{:,3}] = deal(conditionStr{2}); %SubjectNum
+[c_ls_saveCell1{:,4}] = deal(conditionStr{3}); %AblationCond
+[c_ls_saveCell1{:,5}] = deal(conditionStr{4}); %Terrain
+[c_ls_saveCell1{:,6}] = deal(conditionStr{5}); %EggsacCond
 
 %Convert data from matrix to cell array for saving:
 c_ls_saveCell2 =  num2cell(legs_strides_SaveMatrix);
@@ -756,7 +758,7 @@ body_phase_SaveMatrix = [[NaN, 1:(length(RefLegFootOffTimes)-1)]' RefLegFootOffT
 
 %eventBasedLegPhaseDiff = mod(legPhaseDiffs(RefLegFootOffIndex,:),360); 
 
-body_phase_Headers = {'fileName','species','Ind', 'Conditions', 'strideNumber','RefLegFootOffTimes',...
+body_phase_Headers = {'fileName','Species','SubjectNum', 'AblationCond','Terrain','EggsacCond', 'strideNumber','RefLegFootOffTimes',...
     'strideAveVel', 'strideDeltaVel',...
     'strideAveVelAng','strideDeltaVelAng',...
     'strideAveYawAng', 'strideDeltaYawAng', ...
@@ -764,13 +766,15 @@ body_phase_Headers = {'fileName','species','Ind', 'Conditions', 'strideNumber','
     'legPhaseDiffL1','legPhaseDiffL2', 'legPhaseDiffL3','legPhaseDiffL4','legPhaseDiffR1','legPhaseDiffR2','legPhaseDiffR3','legPhaseDiffR4'};
 
 %Put together the numeric data with text data containing headers, filename
-bp_compiledCellArray = cell(1,length(body_phase_SaveMatrix)+4);
+bp_compiledCellArray = cell(1,length(body_phase_SaveMatrix)+6);
 %Create temporary cell for to hold column with fileName
-c_bp_saveCell1 = cell(size(body_phase_SaveMatrix,1), 4);
+c_bp_saveCell1 = cell(size(body_phase_SaveMatrix,1), 6);
 [c_bp_saveCell1{:,1}] = deal(filePrefix);
-[c_bp_saveCell1{:,2}] = deal(conditionStr{1});
-[c_bp_saveCell1{:,3}] = deal(conditionStr{2});
-[c_bp_saveCell1{:,4}] = deal(conditionStr{3});
+[c_bp_saveCell1{:,2}] = deal(conditionStr{1});%species
+[c_bp_saveCell1{:,3}] = deal(conditionStr{2});%SubjectNum
+[c_bp_saveCell1{:,4}] = deal(conditionStr{3});%AblationCond
+[c_bp_saveCell1{:,5}] = deal(conditionStr{4});%Terrain
+[c_bp_saveCell1{:,6}] = deal(conditionStr{5});%EddsacCond
 
 %Convert data from matrix to cell array for saving:
 c_bp_saveCell2 =  num2cell(body_phase_SaveMatrix);
@@ -1030,6 +1034,10 @@ end
 function [bodyPts,legPts,rLpts,kineData,conditionStr] = GetColumnIndicesBasedOnFileName(kineData,kFilename)
 %This function assigns column indices for body and legs based on the file type cases listed below
 %Specify column indices for body and legs
+
+% Species Individual Condition - Species| SubjectNum | Ablation | Terrain | Eggsac
+conditionStr = {kFilename(4:7) kFilename(8:11) kFilename(13:18) kFilename(20) kFilename(22:24)};
+
 if strcmp(kFilename(1:2),'03')==1 || strcmp(kFilename(1:2),'04')==1
     %Intact Wolf Spider trials with no egg sac,
     % 1-2 = bodyCOM X,Y
@@ -1047,9 +1055,6 @@ if strcmp(kFilename(1:2),'03')==1 || strcmp(kFilename(1:2),'04')==1
     bodyPts = [1:3];
     legPts = [4:11];
     rLpts = [1:8];
-    
-    % Species Individual Condition(Terrain/Ablation/eggsac)
-    conditionStr = {kFilename(4:7) kFilename(8:13) kFilename(15:30)};
     
 elseif strcmp(kFilename(1:2),'01')==1 || strcmp(kFilename(1:2),'02')==1
     % Wolf spider trials with egg sac
@@ -1070,10 +1075,8 @@ elseif strcmp(kFilename(1:2),'01')==1 || strcmp(kFilename(1:2),'02')==1
     legPts = [5:12];
     rLpts = [1:8];
     
-    % Species Individual Condition(Terrain/Ablation/eggsac)
-    conditionStr = {kFilename(4:7) kFilename(8:13) kFilename(15:30)};
-    
-elseif strcmp(kFilename(1:3),'002')==1 || strcmp(kFilename(1:2),'07')==1 || strcmp(kFilename(1:2),'08')==1
+elseif strcmp(kFilename(1:3),'12')==1 || strcmp(kFilename(1:2),'07')==1 || strcmp(kFilename(1:2),'08')==1
+    % Wolf spider trials R4 ablated flat/rough no eggsac
     %  leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
     % R4ablation trials - same leg columns, diff no of legs
     % Columns (for R4ablation data):
@@ -1097,16 +1100,8 @@ elseif strcmp(kFilename(1:3),'002')==1 || strcmp(kFilename(1:2),'07')==1 || strc
     legPts = [4:11];
     rLpts = [1:7];
     
-    if strcmp(kFilename(1:3),'002')==1
-        % Species Individual Condition(Terrain/Ablation/eggsac)
-        conditionStr = {kFilename(5:8) kFilename(9:12) kFilename(14:23)};
-    elseif strcmp(kFilename(1:2),'07')==1
-        conditionStr = {kFilename(4:7) kFilename(8:13) kFilename(15:30)};
-    else
-        conditionStr = {kFilename(4:7) kFilename(8:12) kFilename(13:22)};
-    end
-    
-elseif strcmp(kFilename(1:3),'003')==1 || strcmp(kFilename(1:2),'09')==1 || strcmp(kFilename(1:2),'10')==1
+elseif strcmp(kFilename(1:3),'13')==1 || strcmp(kFilename(1:2),'09')==1 || strcmp(kFilename(1:2),'10')==1
+    % Aran/Wolf L3 ablation R4 missing trials
     % L3ablation trials - same leg columns, diff no of legs
     %    leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
     % Columns (for L3ablation R4missing data):
@@ -1128,20 +1123,8 @@ elseif strcmp(kFilename(1:3),'003')==1 || strcmp(kFilename(1:2),'09')==1 || strc
     legPts = [4:11];
     rLpts = [1 2 4 5 6 7];
     
-    if strcmp(kFilename(1:3),'003')==1
-        % Species Individual Condition
-        conditionStr = {kFilename(5:8) kFilename(9:12) kFilename(14:23)};
-        
-    elseif strcmp(kFilename(1:3),'09')==1
-        conditionStr = {kFilename(4:7) kFilename(8:11) kFilename(13:23)};
-        
-    else
-        conditionStr = {kFilename(4:7) kFilename(8:11) kFilename(13:23)};
-        
-    end
-    
 else
-    %Intact trials (OrbW/Wolf) - '001' '05' '06'
+    %Intact trials (Aran/Wolf) - '11' '05' '06'
     % 1-2 = bodyCOM X,Y
     % 3-4 = bodyBack X,Y
     % 5-6 = bodyFront X,Y
@@ -1157,15 +1140,6 @@ else
     legPts = [4:11];
     rLpts = [1:8];
     
-    if strcmp(kFilename(1:3),'001')==1
-        % Species Individual  Condition Date
-        conditionStr = {kFilename(5:8) kFilename(9:12) kFilename(14:21)};
-    elseif strcmp(kFilename(1:2),'05')==1
-        % Species Individual  Condition Date
-        conditionStr = {kFilename(4:7) kFilename(8:13) kFilename(15:32)};
-    else
-        conditionStr = {kFilename(4:7) kFilename(8:12) kFilename(13:21) };
-    end
     
 end
 
