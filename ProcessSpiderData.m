@@ -98,7 +98,7 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     %Based on the 'original' leg configuration
     [~,~,~,kineData] = GetColumnIndicesBasedOnFileName(kineData,kFilename);
     [~,~,~,kineVel] = GetColumnIndicesBasedOnFileName(kineVel,kFilename);
-    [bodyPts,legPts,rLpts,rotatedKineData] = GetColumnIndicesBasedOnFileName(rotatedKineData,kFilename);
+    [bodyPts,legPts,rLpts,rotatedKineData,conditionStr] = GetColumnIndicesBasedOnFileName(rotatedKineData,kFilename);
         
     x_Cols = [1:2:size(rotatedKineData,2)]; % all X coords
     y_Cols = [2:2:size(rotatedKineData,2)]; % all Y coords
@@ -646,11 +646,18 @@ hilEventDet_thresh = 0.06; % default threshold for detecting events from Hilbert
 legs_strides_SaveMatrix = [];
 
 for i=1:numLegs %For all legs
+    
+    cSeg = ceil(i/2)-1;    
+    %Right = 0,  Left = 1
+    r_v_L = ceil(mod(i,2)/2);
+    
     c_nRws = max([length(stancePeriod{i}) length(swingPeriod{i}) length(stridePeriod{i})]);
     %Matrix for current leg data
-    legs_strides_tempMatrix = nan(c_nRws,17); %create temp matrix full of NaNs
+    legs_strides_tempMatrix = nan(c_nRws,19); %create temp matrix full of NaNs
     
     legs_strides_tempMatrix(1:c_nRws,1) = repmat(i,c_nRws,1); %leg number
+    %    legs_strides_tempMatrix(1:c_nRws,1) = repmat(i,c_nRws,1); %leg number
+
     legs_strides_tempMatrix(1:c_nRws,2) = [1:c_nRws]; %stride number
     
     legs_strides_tempMatrix(1:(length(strideAveVel{i})),3) = strideAveVel{i}; %note indexing here in case this variable has less than the max strides
@@ -668,7 +675,9 @@ for i=1:numLegs %For all legs
     legs_strides_tempMatrix(1:(length(stance_y_Excur{i})),15) = stance_y_Excur{i};
     legs_strides_tempMatrix(1:(length(swing_y_Excur{i})),16) = swing_y_Excur{i};
     legs_strides_tempMatrix(1:(length(stanceSlipFactor{i})),17) = stanceSlipFactor{i};
-    
+    legs_strides_tempMatrix(1:c_nRws,18) = repmat(cSeg,c_nRws,1); 
+    legs_strides_tempMatrix(1:c_nRws,19) = repmat(r_v_L,c_nRws,1); 
+
     %concatenate current leg data into the final leg matrix
     legs_strides_SaveMatrix = [legs_strides_SaveMatrix; legs_strides_tempMatrix];
 end
@@ -677,17 +686,21 @@ end
 %Filename is repeated in each row so that multiple files can be compiled into a single spreadsheet later.
 
 %Create output header row
-legs_strides_Header = {'fileName' 'legNumber', 'strideNumber', 'strideAveVel','strideAveVelAng','strideAveYawAng',  ...
+legs_strides_Header = {'fileName','species','Ind', 'Conditions', 'legNumber', 'strideNumber', 'strideAveVel','strideAveVelAng','strideAveYawAng',  ...
     'strideDeltaVel','strideDeltaVelAng','strideDeltaYawAng', 'stridePeriod', 'swingPeriod', ...
-    'stancePeriod','dutyFactor','stance_x_Excur','swing_x_Excur','stance_y_Excur','swing_y_Excur','stanceSlipFactor'};
+    'stancePeriod','dutyFactor','stance_x_Excur','swing_x_Excur','stance_y_Excur','swing_y_Excur','stanceSlipFactor','SegNum','R/L'};
 
 %Put together the numeric data with text data containing headers, filename
-ls_compiledCellArray = cell(1,length(legs_strides_tempMatrix)+1);
+ls_compiledCellArray = cell(1,length(legs_strides_tempMatrix)+4);
 %note this has one additional column for the filename information
 
-%Create temporary cell for to hold column with fileName
-c_ls_saveCell1 = cell(size(legs_strides_SaveMatrix,1), 1);
+%Create temporary cell for to hold column with fileName and condition
+%string
+c_ls_saveCell1 = cell(size(legs_strides_SaveMatrix,1), 4);
 [c_ls_saveCell1{:,1}] = deal(filePrefix);
+[c_ls_saveCell1{:,2}] = deal(conditionStr{1});
+[c_ls_saveCell1{:,3}] = deal(conditionStr{2});
+[c_ls_saveCell1{:,4}] = deal(conditionStr{3});
 
 %Convert data from matrix to cell array for saving:
 c_ls_saveCell2 =  num2cell(legs_strides_SaveMatrix);
@@ -743,7 +756,7 @@ body_phase_SaveMatrix = [[NaN, 1:(length(RefLegFootOffTimes)-1)]' RefLegFootOffT
 
 %eventBasedLegPhaseDiff = mod(legPhaseDiffs(RefLegFootOffIndex,:),360); 
 
-body_phase_Headers = {'fileName', 'strideNumber','RefLegFootOffTimes',...
+body_phase_Headers = {'fileName','species','Ind', 'Conditions', 'strideNumber','RefLegFootOffTimes',...
     'strideAveVel', 'strideDeltaVel',...
     'strideAveVelAng','strideDeltaVelAng',...
     'strideAveYawAng', 'strideDeltaYawAng', ...
@@ -751,10 +764,14 @@ body_phase_Headers = {'fileName', 'strideNumber','RefLegFootOffTimes',...
     'legPhaseDiffL1','legPhaseDiffL2', 'legPhaseDiffL3','legPhaseDiffL4','legPhaseDiffR1','legPhaseDiffR2','legPhaseDiffR3','legPhaseDiffR4'};
 
 %Put together the numeric data with text data containing headers, filename
-bp_compiledCellArray = cell(1,20);
+bp_compiledCellArray = cell(1,length(body_phase_SaveMatrix)+4);
 %Create temporary cell for to hold column with fileName
-c_bp_saveCell1 = cell(size(body_phase_SaveMatrix,1), 1);
+c_bp_saveCell1 = cell(size(body_phase_SaveMatrix,1), 4);
 [c_bp_saveCell1{:,1}] = deal(filePrefix);
+[c_bp_saveCell1{:,2}] = deal(conditionStr{1});
+[c_bp_saveCell1{:,3}] = deal(conditionStr{2});
+[c_bp_saveCell1{:,4}] = deal(conditionStr{3});
+
 %Convert data from matrix to cell array for saving:
 c_bp_saveCell2 =  num2cell(body_phase_SaveMatrix);
 %Compile filename column with data columns into a single cell array
@@ -1010,28 +1027,32 @@ newEventsSorted(end,2) = newEventsSorted(end-1,2).*-1;
 combinedEvents = newEventsSorted;
 end
 
-function [bodyPts,legPts,rLpts,kineData] = GetColumnIndicesBasedOnFileName(kineData,kFilename)
+function [bodyPts,legPts,rLpts,kineData,conditionStr] = GetColumnIndicesBasedOnFileName(kineData,kFilename)
 %This function assigns column indices for body and legs based on the file type cases listed below
-    %Specify column indices for body and legs    
-    if strcmp(kFilename(1:2),'03')==1 || strcmp(kFilename(1:2),'04')==1
-        %Intact Wolf Spider trials with no egg sac,
-        % 1-2 = bodyCOM X,Y
-        % 3-4 = bodyBack X,Y
-        % 5-6 = bodyFront X,Y
-        % 7-8 = L1 X,Y
-        % 9-10 = L2 X,Y
-        % 11-12 = L3 X,Y
-        % 13-14 = L4
-        % 15-16 = R1
-        % 17-18 = R2
-        % 19-20 = R3
-        % 21-22 = R4
-        
-        bodyPts = [1:3];
-        legPts = [4:11];        
-        rLpts = [1:8];
-    elseif strcmp(kFilename(1:2),'01')==1 || strcmp(kFilename(1:2),'02')==1
-        % Wolf spider trials with egg sac
+%Specify column indices for body and legs
+if strcmp(kFilename(1:2),'03')==1 || strcmp(kFilename(1:2),'04')==1
+    %Intact Wolf Spider trials with no egg sac,
+    % 1-2 = bodyCOM X,Y
+    % 3-4 = bodyBack X,Y
+    % 5-6 = bodyFront X,Y
+    % 7-8 = L1 X,Y
+    % 9-10 = L2 X,Y
+    % 11-12 = L3 X,Y
+    % 13-14 = L4
+    % 15-16 = R1
+    % 17-18 = R2
+    % 19-20 = R3
+    % 21-22 = R4
+    
+    bodyPts = [1:3];
+    legPts = [4:11];
+    rLpts = [1:8];
+    
+    % Species Individual Condition(Terrain/Ablation/eggsac)
+    conditionStr = {kFilename(4:7) kFilename(8:13) kFilename(15:30)};
+    
+elseif strcmp(kFilename(1:2),'01')==1 || strcmp(kFilename(1:2),'02')==1
+    % Wolf spider trials with egg sac
     % 1-2 = bodyCOM X,Y
     % 3-4 = bodyBack X,Y
     % 5-6 = bodyFront X,Y
@@ -1046,13 +1067,16 @@ function [bodyPts,legPts,rLpts,kineData] = GetColumnIndicesBasedOnFileName(kineD
     % 23-24 = R4
     
     bodyPts = [1:4];
-    legPts = [5:12];        
+    legPts = [5:12];
     rLpts = [1:8];
     
-    elseif strcmp(kFilename(1:3),'002')==1 || strcmp(kFilename(1:2),'07')==1 || strcmp(kFilename(1:2),'08')==1
-        %  leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
-        % R4ablation trials - same leg columns, diff no of legs
-% Columns (for R4ablation data):    
+    % Species Individual Condition(Terrain/Ablation/eggsac)
+    conditionStr = {kFilename(4:7) kFilename(8:13) kFilename(15:30)};
+    
+elseif strcmp(kFilename(1:3),'002')==1 || strcmp(kFilename(1:2),'07')==1 || strcmp(kFilename(1:2),'08')==1
+    %  leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
+    % R4ablation trials - same leg columns, diff no of legs
+    % Columns (for R4ablation data):
     % 1-2 = bodyCOM X,Y
     % 3-4 = bodyBack X,Y
     % 5-6 = bodyFront X,Y
@@ -1062,20 +1086,29 @@ function [bodyPts,legPts,rLpts,kineData] = GetColumnIndicesBasedOnFileName(kineD
     % 13-14 = L4
     % 15-16 = R1
     % 17-18 = R2
-    % 19-20 = R3 
-        tempKineData = nan(size(kineData,1),size(kineData,2)+2);
-        %Leave column of NaNs at the appropriate place in the dataset for
-        %ablated legs
-        tempKineData(:,1:size(kineData,2)) = kineData(:,1:size(kineData,2)); 
-        kineData = tempKineData;
-        
+    % 19-20 = R3
+    tempKineData = nan(size(kineData,1),size(kineData,2)+2);
+    %Leave column of NaNs at the appropriate place in the dataset for
+    %ablated legs
+    tempKineData(:,1:size(kineData,2)) = kineData(:,1:size(kineData,2));
+    kineData = tempKineData;
+    
     bodyPts = [1:3];
-    legPts = [4:11];        
+    legPts = [4:11];
     rLpts = [1:7];
-                    
-    elseif strcmp(kFilename(1:3),'003')==1 || strcmp(kFilename(1:2),'09')==1 || strcmp(kFilename(1:2),'10')==1
-        % L3ablation trials - same leg columns, diff no of legs
-         %    leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
+    
+    if strcmp(kFilename(1:3),'002')==1
+        % Species Individual Condition(Terrain/Ablation/eggsac)
+        conditionStr = {kFilename(5:8) kFilename(9:12) kFilename(14:23)};
+    elseif strcmp(kFilename(1:2),'07')==1
+        conditionStr = {kFilename(4:7) kFilename(8:13) kFilename(15:30)};
+    else
+        conditionStr = {kFilename(4:7) kFilename(8:12) kFilename(13:22)};
+    end
+    
+elseif strcmp(kFilename(1:3),'003')==1 || strcmp(kFilename(1:2),'09')==1 || strcmp(kFilename(1:2),'10')==1
+    % L3ablation trials - same leg columns, diff no of legs
+    %    leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
     % Columns (for L3ablation R4missing data):
     % 1-2 = bodyCOM X,Y
     % 3-4 = bodyBack X,Y
@@ -1085,33 +1118,56 @@ function [bodyPts,legPts,rLpts,kineData] = GetColumnIndicesBasedOnFileName(kineD
     % 11-12 = L4
     % 13-14 = R1
     % 15-16 = R2
-    % 17-18 = R3 
-        tempKineData = nan(size(kineData,1),size(kineData,2)+4);
-        tempKineData(:,1:10) = kineData(:,1:10); %body pts, L1, L2
-        tempKineData(:,13:size(tempKineData,2)-2) = kineData(:,11:size(kineData,2)); %L4, to end        
-        kineData = tempKineData;
-
-        bodyPts = [1:3];
-        legPts = [4:11];        
-        rLpts = [1 2 4 5 6 7];      
-   
-    else
-        %Intact trials (OrbW/Wolf) - '001' '05' '06'
-         % 1-2 = bodyCOM X,Y
-        % 3-4 = bodyBack X,Y
-        % 5-6 = bodyFront X,Y
-        % 7-8 = L1 X,Y
-        % 9-10 = L2 X,Y
-        % 11-12 = L3 X,Y
-        % 13-14 = L4
-        % 15-16 = R1
-        % 17-18 = R2
-        % 19-20 = R3
-        % 21-22 = R4
+    % 17-18 = R3
+    tempKineData = nan(size(kineData,1),size(kineData,2)+4);
+    tempKineData(:,1:10) = kineData(:,1:10); %body pts, L1, L2
+    tempKineData(:,13:size(tempKineData,2)-2) = kineData(:,11:size(kineData,2)); %L4, to end
+    kineData = tempKineData;
+    
     bodyPts = [1:3];
-    legPts = [4:11];        
-    rLpts = [1:8];
+    legPts = [4:11];
+    rLpts = [1 2 4 5 6 7];
+    
+    if strcmp(kFilename(1:3),'003')==1
+        % Species Individual Condition
+        conditionStr = {kFilename(5:8) kFilename(9:12) kFilename(14:23)};
+        
+    elseif strcmp(kFilename(1:3),'09')==1
+        conditionStr = {kFilename(4:7) kFilename(8:11) kFilename(13:23)};
+        
+    else
+        conditionStr = {kFilename(4:7) kFilename(8:11) kFilename(13:23)};
+        
     end
+    
+else
+    %Intact trials (OrbW/Wolf) - '001' '05' '06'
+    % 1-2 = bodyCOM X,Y
+    % 3-4 = bodyBack X,Y
+    % 5-6 = bodyFront X,Y
+    % 7-8 = L1 X,Y
+    % 9-10 = L2 X,Y
+    % 11-12 = L3 X,Y
+    % 13-14 = L4
+    % 15-16 = R1
+    % 17-18 = R2
+    % 19-20 = R3
+    % 21-22 = R4
+    bodyPts = [1:3];
+    legPts = [4:11];
+    rLpts = [1:8];
+    
+    if strcmp(kFilename(1:3),'001')==1
+        % Species Individual  Condition Date
+        conditionStr = {kFilename(5:8) kFilename(9:12) kFilename(14:21)};
+    elseif strcmp(kFilename(1:2),'05')==1
+        % Species Individual  Condition Date
+        conditionStr = {kFilename(4:7) kFilename(8:13) kFilename(15:32)};
+    else
+        conditionStr = {kFilename(4:7) kFilename(8:12) kFilename(13:21) };
+    end
+    
+end
 
 end
 
