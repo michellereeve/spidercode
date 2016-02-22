@@ -83,8 +83,8 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     plot(rotatedKineData(:,x_Cols),rotatedKineData(:,y_Cols),'r');
     hold on;
     plot(tempSmoothData(:,x_Cols), tempSmoothData(:,y_Cols),'b');
-    xlabel('X-coords')
-    ylabel('Y-coords')
+    xlabel('x-coordinates')
+    ylabel('y-coordinates')
     title([filePrefix ': Kinematic data: red = raw, blue = filtered | sptol = ' num2str(vel_sptol)])
     [~] = SaveFigAsPDF(f5,savePathN,filePrefix,'_FiltKineData');
     close(f5);
@@ -286,6 +286,8 @@ f10=(figure); %#ok<NASGU>
 plot(legDataRelToCOM(:,filtXLegCols),legDataRelToCOM(:,filtYLegCols));
 legend(leg_labels,'Location', 'eastoutside');
 title([filePrefix ': Foot trajectory (rel to COM)']);
+ylabel('y-coordinates');
+xlabel('x-coordinates');
 print([savePathN,filePrefix,'_FootTrajectoryPlot'],'-dpdf');
 %close(f10);
 
