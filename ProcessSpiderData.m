@@ -750,7 +750,7 @@ strideLength(2:end) = sqrt((diff(meanBodyPt(RefLegFootOffIndex,1)).^2 + diff(mea
 % strideVelocity = nan(length(RefLegFootOffIndex),1);
 % strideVelocity(2:end) = strideLength(2:end)./(diff(RefLegFootOffIndex)./framerate); %mm per second
 
-RefLegFootOffTimes = RefLegFootOffIndex./framerate;
+RefLegFootOffTimes = time(RefLegFootOffIndex);
 
 body_phase_SaveMatrix = [[NaN, 1:(length(RefLegFootOffTimes)-1)]' RefLegFootOffTimes ...
     [NaN strideAveVel{refLeg}]' [NaN strideDeltaVel{refLeg}]'...
@@ -1077,7 +1077,7 @@ elseif strcmp(kFilename(1:2),'01')==1 || strcmp(kFilename(1:2),'02')==1
     legPts = [5:12];
     rLpts = [1:8];
     
-elseif strcmp(kFilename(1:3),'12')==1 || strcmp(kFilename(1:2),'07')==1 || strcmp(kFilename(1:2),'08')==1
+elseif strcmp(kFilename(1:2),'12')==1 || strcmp(kFilename(1:2),'07')==1 || strcmp(kFilename(1:2),'08')==1
     % Wolf spider trials R4 ablated flat/rough no eggsac
     %  leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
     % R4ablation trials - same leg columns, diff no of legs
@@ -1102,7 +1102,7 @@ elseif strcmp(kFilename(1:3),'12')==1 || strcmp(kFilename(1:2),'07')==1 || strcm
     legPts = [4:11];
     rLpts = [1:7];
     
-elseif strcmp(kFilename(1:3),'13')==1 || strcmp(kFilename(1:2),'09')==1 || strcmp(kFilename(1:2),'10')==1
+elseif strcmp(kFilename(1:2),'13')==1 || strcmp(kFilename(1:2),'09')==1 || strcmp(kFilename(1:2),'10')==1
     % Aran/Wolf L3 ablation R4 missing trials
     % L3ablation trials - same leg columns, diff no of legs
     %    leg_labels = {'L1','L2','L3','L4','R1','R2','R3','R4'};
