@@ -18,7 +18,7 @@ SpidColors = [0 0.4470 0.7410;
     0 0 0.4828];
 set(groot,'defaultAxesColorOrder',SpidColors);
 
-% user browse to filename if not already provided.
+% user browse to filename if not already provided.close
 
 if ~exist('fileName','var')
     %Browse for the file
@@ -690,10 +690,10 @@ end
 %Create output header row
 legs_strides_Header = {'fileName','Species','SubjectNum', 'AblationCond','Terrain','EggsacCond', 'legNumber', 'strideNumber', 'strideAveVel','strideAveVelAng','strideAveYawAng',  ...
     'strideDeltaVel','strideDeltaVelAng','strideDeltaYawAng', 'stridePeriod', 'swingPeriod', ...
-    'stancePeriod','dutyFactor','stance_x_Excur','swing_x_Excur','stance_y_Excur','swing_y_Excur','stanceSlipFactor','SegNum','R/L'};
+    'stancePeriod','dutyFactor','stance_x_Excur','swing_x_Excur','stance_y_Excur','swing_y_Excur','stanceSlipFactor','SegNum','R/L','TrialType'};
 
 %Put together the numeric data with text data containing headers, filename
-ls_compiledCellArray = cell(1,length(legs_strides_tempMatrix)+6);
+ls_compiledCellArray = cell(1,length(legs_strides_tempMatrix)+7);
 %note this has one additional column for the filename information
 
 %Create temporary cell for to hold column with fileName and condition
@@ -709,8 +709,11 @@ c_ls_saveCell1 = cell(size(legs_strides_SaveMatrix,1), 6);
 %Convert data from matrix to cell array for saving:
 c_ls_saveCell2 =  num2cell(legs_strides_SaveMatrix);
 
+c_ls_saveCell3 = cell(size(legs_strides_SaveMatrix,1), 1);
+[c_ls_saveCell3{:,1}] = deal(conditionStr{6});%trialtype
+
 %Compile filename column with data columns into a single cell array
-c_saveCell = horzcat(c_ls_saveCell1,c_ls_saveCell2);
+c_saveCell = horzcat(c_ls_saveCell1,c_ls_saveCell2,c_ls_saveCell3);
 
 %Create a headers row for the top of the spreadsheet:
 [ls_compiledCellArray{1,1:end}] = deal(legs_strides_Header{:});
@@ -765,10 +768,10 @@ body_phase_Headers = {'fileName','Species','SubjectNum', 'AblationCond','Terrain
     'strideAveVelAng','strideDeltaVelAng',...
     'strideAveYawAng', 'strideDeltaYawAng', ...
     'strideLength','dutyFactor', 'stanceSlipFactor',...
-    'legPhaseDiffL1','legPhaseDiffL2', 'legPhaseDiffL3','legPhaseDiffL4','legPhaseDiffR1','legPhaseDiffR2','legPhaseDiffR3','legPhaseDiffR4'};
+    'legPhaseDiffL1','legPhaseDiffL2', 'legPhaseDiffL3','legPhaseDiffL4','legPhaseDiffR1','legPhaseDiffR2','legPhaseDiffR3','legPhaseDiffR4','TrialType'};
 
 %Put together the numeric data with text data containing headers, filename
-bp_compiledCellArray = cell(1,length(body_phase_SaveMatrix)+6);
+bp_compiledCellArray = cell(1,length(body_phase_SaveMatrix)+7);
 %Create temporary cell for to hold column with fileName
 c_bp_saveCell1 = cell(size(body_phase_SaveMatrix,1), 6);
 [c_bp_saveCell1{:,1}] = deal(filePrefix);
@@ -776,12 +779,15 @@ c_bp_saveCell1 = cell(size(body_phase_SaveMatrix,1), 6);
 [c_bp_saveCell1{:,3}] = deal(conditionStr{2});%SubjectNum
 [c_bp_saveCell1{:,4}] = deal(conditionStr{3});%AblationCond
 [c_bp_saveCell1{:,5}] = deal(conditionStr{4});%Terrain
-[c_bp_saveCell1{:,6}] = deal(conditionStr{5});%EddsacCond
+[c_bp_saveCell1{:,6}] = deal(conditionStr{5});%EggsacCond
+
+c_bp_saveCell3 = cell(size(body_phase_SaveMatrix,1), 1);
+[c_bp_saveCell3{:,1}] = deal(conditionStr{6});%trialtype
 
 %Convert data from matrix to cell array for saving:
 c_bp_saveCell2 =  num2cell(body_phase_SaveMatrix);
 %Compile filename column with data columns into a single cell array
-c_bp_saveCell = horzcat(c_bp_saveCell1,c_bp_saveCell2);
+c_bp_saveCell = horzcat(c_bp_saveCell1,c_bp_saveCell2,c_bp_saveCell3);
 %Create a headers row for the top of the spreadsheet:
 [bp_compiledCellArray{1,1:end}] = deal(body_phase_Headers{:});
 %Put the headers row together with the data:
@@ -1037,8 +1043,8 @@ function [bodyPts,legPts,rLpts,kineData,conditionStr] = GetColumnIndicesBasedOnF
 %This function assigns column indices for body and legs based on the file type cases listed below
 %Specify column indices for body and legs
 
-% Species Individual Condition - Species| SubjectNum | Ablation | Terrain | Eggsac
-conditionStr = {kFilename(4:7) kFilename(8:11) kFilename(13:18) kFilename(20) kFilename(22:24)};
+% Species Individual Condition - Species| SubjectNum (just two numbers) | Ablation | Terrain | Eggsac
+conditionStr = {kFilename(4:7) kFilename(10:11) kFilename(13:18) kFilename(20) kFilename(22:24) kFilename(1:2)};
 
 if strcmp(kFilename(1:2),'03')==1 || strcmp(kFilename(1:2),'04')==1
     %Intact Wolf Spider trials with no egg sac,

@@ -18,8 +18,8 @@ dirStructure = dir([pathName '*.csv']);
 mkdir([pathName '_Results' sep]);
 saveDir = dirCheck([pathName '_Results' sep ]);
 
-strides_CompiledCellArray = cell(1,25);
-bodyPhase_CompiledCellArray = cell(1,25);
+strides_CompiledCellArray = cell(1,26);
+bodyPhase_CompiledCellArray = cell(1,26);
 
 for f = 1:length(fileNamesArray)
     
@@ -41,7 +41,9 @@ end
 %Create a new 'Output' folder to save the processed data files into
 
 
- cell2csv([saveDir 'LegStridesCompiledData.csv' ], strides_CompiledCellArray);
- cell2csv([saveDir 'BodyPhaseCompiledData.csv' ], bodyPhase_CompiledCellArray);
+ cell2csv([saveDir '_LegsStridesCompiledData.csv' ], strides_CompiledCellArray);
+ cell2csv([saveDir '_BodyPhaseCompiledData.csv' ], bodyPhase_CompiledCellArray);
+ 
+ 
 
  

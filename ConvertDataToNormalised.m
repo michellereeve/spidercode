@@ -1,4 +1,4 @@
-%% pull in FILTERED CSVs
+%% pull in FILTERED CSVs - need to filter them manually first
 run importLegStrideData.m
 run importBodyPhaseData.m
 %% import arrays of data for subject number + masslength scaling metrics
@@ -157,7 +157,7 @@ end
 
 legs_strides_norm_Headers = {'fileName','Species','SubjectNum', 'AblationCond','Terrain','EggsacCond', 'legNumber', 'strideNumber', 'strideAveVel_norm','strideAveVelAng','strideAveYawAng',  ...
     'strideDeltaVel_norm','strideDeltaVelAng','strideDeltaYawAng', 'stridePeriod_norm', 'swingPeriod_norm', ...
-    'stancePeriod_norm','dutyFactor','stance_x_Excur_norm','swing_x_Excur_norm','stance_y_Excur_norm','swing_y_Excur_norm','stanceSlipFactor','SegNum','R/L'};
+    'stancePeriod_norm','dutyFactor','stance_x_Excur_norm','swing_x_Excur_norm','stance_y_Excur_norm','swing_y_Excur_norm','stanceSlipFactor','SegNum','R/L','TrialType'};
 
 % create empty cell array for spreadsheet to save
 ls_data_norm2save = cell(size(ls_data_norm,1)+1,size(ls_data_norm,2));
@@ -181,7 +181,7 @@ body_phase_norm_Headers = {'fileName','Species','SubjectNum', 'AblationCond','Te
     'strideAveVelAng','strideDeltaVelAng',...
     'strideAveYawAng', 'strideDeltaYawAng', ...
     'strideLength_norm','dutyFactor', 'stanceSlipFactor',...
-    'legPhaseDiffL1','legPhaseDiffL2', 'legPhaseDiffL3','legPhaseDiffL4','legPhaseDiffR1','legPhaseDiffR2','legPhaseDiffR3','legPhaseDiffR4'};
+    'legPhaseDiffL1','legPhaseDiffL2', 'legPhaseDiffL3','legPhaseDiffL4','legPhaseDiffR1','legPhaseDiffR2','legPhaseDiffR3','legPhaseDiffR4','TrialType'};
 
 % create empty cell array for spreadsheet to save
 bp_data_norm2save = cell(size(bp_data_norm,1)+1,size(bp_data_norm,2));
