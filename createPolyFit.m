@@ -1,4 +1,4 @@
-function [fitresult, gof, output] = createPolyFit(xvalue, yvalue) %make generic
+function [fitresult, gof, output] = createPolyFit(xvalue, yvalue)
 %CREATEFIT(LS_WOLFINTACTFLATESNSPEED,LS_WOLFINTACTFLATESNDUTYFACTOR)
 %  Create a fit.
 %
@@ -26,21 +26,25 @@ opts.Robust = 'Bisquare';
 [fitresult, gof , output] = fit( xData, yData, ft, opts );
 
 % Plot fit with data.
-figure( 'Name', 'untitled fit 1' );
+f1 = figure( 'Name', 'untitled fit 1' );
+set(f1,'units', 'normalized'); set(f1,'Position', [0 0.0364583 1 0.875]);
 h = plot( fitresult, xData, yData, 'predobs' );
 % legend( h, 'ls_WolfIntactFlatESNDutyFactor vs. ls_WolfIntactFlatESNSpeed', 'untitled fit 1', 'Lower bounds (untitled fit 1)', 'Upper bounds (untitled fit 1)', 'Location', 'NorthEast' );
 % % Label axes
 % xlabel ls_WolfIntactFlatESNSpeed
 % ylabel ls_WolfIntactFlatESNDutyFactor
+ci = confint(fitresult);
 grid on
 gtext(['R-square = ' num2str(gof.rsquare)]);
+gtext(['Gradient = ' num2str(fitresult.p1)]);
+gtext(['95% CI =  ' num2str(ci(1,1)) ' to ' num2str(ci(2,1))]);
 
 
-% plot residuals with line at y=0
-figure('Name', 'residuals');
-plot(output.residuals,'-ko')
-legend('residuals');
-refline(0)
+% % plot residuals with line at y=0
+% figure('Name', 'residuals');
+% plot(output.residuals,'-ko')
+% legend('residuals');
+% refline(0)
 
 %[fitresult, gof, output] = createPolyFit(bpN_AranIntact_speed, bpN_AranIntact_dF)
 

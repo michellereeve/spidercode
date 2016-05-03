@@ -1,4 +1,4 @@
-function [out_bp_compiledArray,body_phase_Headers, out_LS_compiledArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData(fileName,pathName)
+ function [out_bp_compiledArray,body_phase_Headers, out_LS_compiledArray, legs_strides_Header, filePrefix, combinedEvents] = ProcessSpiderData(fileName,pathName)
 % A script to process spider gait data (initially orb-weaver, intact trials)
 
 %Utility variable
@@ -18,7 +18,7 @@ SpidColors = [0 0.4470 0.7410;
     0 0 0.4828];
 set(groot,'defaultAxesColorOrder',SpidColors);
 
-% user browse to filename if not already provided.close
+% user browse to filename if not already provided
 
 if ~exist('fileName','var')
     %Browse for the file
@@ -73,7 +73,7 @@ if ~exist([kPathname filePrefix '.mat'],'file')
     % motion in the positive X direction       
     [rotatedKineData] = RotateDataToBodyFrame(kineData,[1]);
     
-    vel_sptol = 0.001; % sptol for smoothing velocities      
+    vel_sptol = 0.001; % sptol for smoothing velocities - was 0.001, changed to 0.05 for Aran after lens correction   
     [tempSmoothData,kineVel] = SplineInterp_wSPAPS(rotatedKineData, time, vel_sptol, 1);
     x_Cols = [1:2:size(rotatedKineData,2)]; % all X coords
     y_Cols = [2:2:size(rotatedKineData,2)]; % all Y coords
