@@ -24,19 +24,19 @@ run importScalingMetrics.m
 % MassLengthScalingMetrics(:,5) = NormFreq_denom
 % MassLengthScalingMetrics(:,6) = NormLength_denom
 
-% ls_data(:,9) = strideAveVel = NormVel_denom
-% ls_data(:,12) = strideDeltaVel = NormVel_denom
+% ls_data(:,9) = strideAveVel = NormVel_denom -- needs converting to m/s
+% ls_data(:,12) = strideDeltaVel = NormVel_denom -- needs converting to m/s
 % ls_data(:,15) = stridePeriod = NormTime_denom
 % ls_data(:,16) = swingPeriod = NormTime_denom
 % ls_data(:,17) = stancePeriod = NormTime_denom
-% ls_data(:,19) = stance_x_Excur = NormLength_denom
-% ls_data(:,20) = swing_x_Excur = NormLength_denom
-% ls_data(:,21) = stance_y_Excur = NormLength_denom
-% ls_data(:,22) = swing_x_Excur = NormLength_denom
+% ls_data(:,19) = stance_x_Excur = NormLength_denom -- needs converting to metres
+% ls_data(:,20) = swing_x_Excur = NormLength_denom  -- needs converting to metres
+% ls_data(:,21) = stance_y_Excur = NormLength_denom  -- needs converting to metres
+% ls_data(:,22) = swing_x_Excur = NormLength_denom  -- needs converting to metres
 
-% bp_data(:,9) = strideAveVel = NormVel_denom
-% bp_data(:,10) = strideDeltaVel = NormVel_denom
-% bp_data(:,15) = strideLength = NormLength_denom
+% bp_data(:,9) = strideAveVel = NormVel_denom -- needs converting to m/s
+% bp_data(:,10) = strideDeltaVel = NormVel_denom -- needs converting to m/s
+% bp_data(:,15) = strideLength = NormLength_denom  -- needs converting to metres
 
 % for each subject in bp_data and ls_data, columnX =
 % columnXdata/relevantDenomValue
@@ -44,7 +44,7 @@ run importScalingMetrics.m
 %subjectNum = [22 23 26 27 28 29 30 34 36 50 51 52 56 57 58 59 60 61]; %i=18
 
 ls_data_norm = ls_data; % make copies so you can compare old and new
-bp_data_norm = bp_data;
+bp_data_norm = bp_data; 
 
 for i=1:18
     c_Subject = Subject(i); % current subject
@@ -56,96 +56,105 @@ for i=1:18
     % begin converting things for this subject
     
     % ls_data(:,9) = strideAveVel
-    originalData = ls_data(ls_c_SubjectTF,9); % strideAveVel
-    newData = (cell2mat(originalData))/NormVel_denom(i); % do the conversion
+    originalData = cell2mat(ls_data(ls_c_SubjectTF,9)); % strideAveVel
+    originalData = originalData./1000; % convert to metres/s
+    newData = originalData./NormVel_denom(i); % do the conversion
     newData = num2cell(newData); % convert it from vector into a cell
     ls_data_norm(ls_c_SubjectTF,9) = newData; % replace the correct rows for this subject, in this column, with the converted data
     clear originalData
     clear newData
     
     %ls_data(:,12) = strideDeltaVel
-    originalData = ls_data(ls_c_SubjectTF,12);
-    newData = (cell2mat(originalData))/NormVel_denom(i);
+    originalData = cell2mat(ls_data(ls_c_SubjectTF,12));
+    originalData = originalData./1000; % convert to metres/s
+    newData = originalData/NormVel_denom(i);
     newData = num2cell(newData);
     ls_data_norm(ls_c_SubjectTF,12) = newData;
     clear originalData
     clear newData
     
     %ls_data(:,15) = stridePeriod
-    originalData = ls_data(ls_c_SubjectTF,15); 
-    newData = (cell2mat(originalData))/NormTime_denom(i);
+    originalData = cell2mat(ls_data(ls_c_SubjectTF,15)); 
+    newData = originalData./NormTime_denom(i);
     newData = num2cell(newData);
     ls_data_norm(ls_c_SubjectTF,15) = newData;
     clear originalData
     clear newData
     
     % ls_data(:,16) = swingPeriod
-    originalData = ls_data(ls_c_SubjectTF,16);
-    newData = (cell2mat(originalData))/NormTime_denom(i);
+    originalData = cell2mat(ls_data(ls_c_SubjectTF,16));
+    newData = originalData./NormTime_denom(i);
     newData = num2cell(newData);
     ls_data_norm(ls_c_SubjectTF,16) = newData;
     clear originalData
     clear newData
     
     %ls_data(:,17) = stancePeriod
-    originalData = ls_data(ls_c_SubjectTF,17); 
-    newData = (cell2mat(originalData))/NormTime_denom(i);
+    originalData = cell2mat(ls_data(ls_c_SubjectTF,17)); 
+    newData = originalData./NormTime_denom(i);
     newData = num2cell(newData);
     ls_data_norm(ls_c_SubjectTF,17) = newData;
     clear originalData
     clear newData
     
     % ls_data(:,19) = stance_x_Excur
-    originalData = ls_data(ls_c_SubjectTF,19); 
-    newData = (cell2mat(originalData))/NormLength_denom(i);
+    originalData = cell2mat(ls_data(ls_c_SubjectTF,19));
+    originalData = originalData./1000; % convert to metres
+    newData = originalData./NormLength_denom(i);
     newData = num2cell(newData);
     ls_data_norm(ls_c_SubjectTF,19) = newData;
     clear originalData
     clear newData
     
     % ls_data(:,20) = swing_x_Excur
-    originalData = ls_data(ls_c_SubjectTF,20); 
-    newData = (cell2mat(originalData))/NormLength_denom(i);
+    originalData = cell2mat(ls_data(ls_c_SubjectTF,20));
+    originalData = originalData./1000; % convert to metres
+    newData = originalData./NormLength_denom(i);
     newData = num2cell(newData);
     ls_data_norm(ls_c_SubjectTF,20) = newData;
     clear originalData
     clear newData
     
     % ls_data(:,21) = stance_y_Excur
-    originalData = ls_data(ls_c_SubjectTF,21); 
-    newData = (cell2mat(originalData))/NormLength_denom(i);
+    originalData = cell2mat(ls_data(ls_c_SubjectTF,21));
+    originalData = originalData./1000; % convert to metres
+    newData = originalData./NormLength_denom(i);
     newData = num2cell(newData);
     ls_data_norm(ls_c_SubjectTF,21) = newData;
     clear originalData
     clear newData
     
     % ls_data(:,22) = swing_x_Excur
-    originalData = ls_data(ls_c_SubjectTF,22);
-    newData = (cell2mat(originalData))/NormLength_denom(i);
+    originalData = cell2mat(ls_data(ls_c_SubjectTF,22));
+    originalData = originalData./1000; % convert to metres
+    newData = originalData./NormLength_denom(i);
     newData = num2cell(newData);
     ls_data_norm(ls_c_SubjectTF,22) = newData;
     clear originalData
     clear newData
     
     % bp_data(:,9) = strideAveVel
-    originalData = bp_data(bp_c_SubjectTF,9); 
-    newData = (cell2mat(originalData))/NormVel_denom(i);
+    originalData = cell2mat(bp_data(bp_c_SubjectTF,9));
+    originalData = originalData./1000; % convert to metres/s
+    newData = originalData./NormVel_denom(i);
     newData = num2cell(newData);
     bp_data_norm(bp_c_SubjectTF,9) = newData;
     clear originalData
     clear newData
     
     % bp_data(:,10) = strideDeltaVel
-    originalData = bp_data(bp_c_SubjectTF,10); 
-    newData = (cell2mat(originalData))/NormVel_denom(i);
+    originalData = cell2mat(bp_data(bp_c_SubjectTF,10));
+    originalData = originalData./1000; % convert to metres/s
+    newData = originalData./NormVel_denom(i);
     newData = num2cell(newData);
     bp_data_norm(bp_c_SubjectTF,10) = newData;
     clear originalData
     clear newData
     
     % bp_data(:,15) = strideLength
-    originalData = bp_data(bp_c_SubjectTF,15); 
-    newData = (cell2mat(originalData))/NormLength_denom(i);
+    originalData = cell2mat(bp_data(bp_c_SubjectTF,15));
+    originalData = originalData./1000; % convert to metres
+    newData = originalData./NormLength_denom(i);
     newData = num2cell(newData);
     bp_data_norm(bp_c_SubjectTF,15) = newData;
     clear originalData
